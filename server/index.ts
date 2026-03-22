@@ -1,3 +1,4 @@
+import "./db/init";
 import { healthEndpoint } from "./endpoints/health";
 import { rootEndpoint } from "./endpoints/root";
 
