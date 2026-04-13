@@ -1,6 +1,8 @@
 import "./db/init";
 import { healthEndpoint } from "./endpoints/health";
 import { rootEndpoint } from "./endpoints/root";
+import { getDictionarySize } from "./words/dictionary";
+import { handleWebSocketUpgrade, websocket } from "./websocket";
 
 const server = Bun.serve({
   port: 5555,
@@ -8,9 +10,21 @@ const server = Bun.serve({
     "/": rootEndpoint,
     "/health": healthEndpoint,
   },
-  fetch() {
+  fetch(req, server) {
+    const url = new URL(req.url);
+
+    if (url.pathname === "/ws") {
+      const upgraded = handleWebSocketUpgrade(req, server);
+      if (upgraded) {
+        return;
+      }
+
+      return new Response("WebSocket upgrade failed", { status: 400 });
+    }
+
     return new Response("Not Found", { status: 404 });
   },
+  websocket,
   error(error) {
     console.error(error);
     return new Response("Internal Server Error", {
@@ -23,3 +37,4 @@ const server = Bun.serve({
 });
 
 console.log(`Server running at ${server.url}`);
+console.log(`Loaded dictionary with ${getDictionarySize()} words`);

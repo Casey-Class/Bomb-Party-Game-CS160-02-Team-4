@@ -1,10 +1,4 @@
 import { useState } from "react"
-import {
-  mockPlayers,
-  mockGameState,
-  mockChatMessages,
-  mockGameSettings,
-} from "@/data/mock-game"
 import { PlayerCircle } from "@/components/game/player-circle"
 import { BombPrompt } from "@/components/game/bomb-prompt"
 import { WordInput } from "@/components/game/word-input"
@@ -13,20 +7,28 @@ import { GameChat } from "@/components/game/game-chat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Bomb, MessageSquare, Settings, Users } from "lucide-react"
+import { useGameSocket } from "@/lib/game-socket"
 
 export function GamePage() {
   const [typedWord, setTypedWord] = useState("")
-  const currentPlayer = mockPlayers.find(
-    (p) => p.id === mockGameState.currentPlayerId,
-  )
-  const aliveCount = mockPlayers.filter((p) => !p.isEliminated).length
+  const {
+    players,
+    gameState,
+    chatMessages,
+    gameSettings,
+    connectionStatus,
+    clientId,
+    sendTypingWord,
+    sendWord,
+    sendChat,
+  } = useGameSocket()
+  const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId)
+  const aliveCount = players.filter((p) => !p.isEliminated).length
 
-  const activePlayerIndex = mockPlayers.findIndex(
-    (p) => p.id === mockGameState.currentPlayerId,
-  )
+  const activePlayerIndex = players.findIndex((p) => p.id === gameState.currentPlayerId)
   const activePlayerAngle =
-    activePlayerIndex >= 0
-      ? (2 * Math.PI * activePlayerIndex) / mockPlayers.length - Math.PI / 2
+    activePlayerIndex >= 0 && players.length > 0
+      ? (2 * Math.PI * activePlayerIndex) / players.length - Math.PI / 2
       : 0
 
   return (
@@ -40,41 +42,51 @@ export function GamePage() {
               variant="secondary"
               className="bg-zinc-800 text-white/60 text-xs"
             >
-              Room: {mockGameSettings.roomCode}
+              Room: {gameSettings.roomCode}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="border-emerald-400/30 text-emerald-300 text-xs capitalize"
+            >
+              {connectionStatus}
             </Badge>
           </div>
           <div className="flex items-center gap-3 text-xs text-white/50">
             <div className="flex items-center gap-1">
               <Users className="h-3.5 w-3.5" />
               <span>
-                {aliveCount}/{mockPlayers.length} alive
+                {aliveCount}/{players.length} alive
               </span>
             </div>
             <Badge
               variant="outline"
               className="border-amber-400/30 text-amber-400 text-xs"
             >
-              Round {mockGameState.round}
+              Round {gameState.round}
             </Badge>
           </div>
         </div>
 
         <div className="flex-1 relative min-h-0">
           <PlayerCircle
-            players={mockPlayers}
-            currentSyllable={mockGameState.currentSyllable}
+            players={players}
+            currentSyllable={gameState.currentSyllable}
             activePlayerTypedWord={typedWord}
           />
-          <BombPrompt gameState={mockGameState} activePlayerAngle={activePlayerAngle} />
+          <BombPrompt gameState={gameState} activePlayerAngle={activePlayerAngle} />
         </div>
 
         <div className="px-6 py-4 border-t border-white/5 bg-zinc-900/80">
           <WordInput
             currentPlayer={currentPlayer}
-            gameState={mockGameState}
+            gameState={gameState}
             typedWord={typedWord}
-            onTypedWordChange={setTypedWord}
-            isLocalPlayer={mockGameState.currentPlayerId === "p5"}
+            onTypedWordChange={(word) => {
+              setTypedWord(word)
+              sendTypingWord(word)
+            }}
+            onSubmitWord={sendWord}
+            isLocalPlayer={gameState.currentPlayerId === clientId}
           />
         </div>
       </div>
@@ -98,10 +110,10 @@ export function GamePage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="flex-1 m-0 min-h-0">
-            <GameChat messages={mockChatMessages} />
+            <GameChat messages={chatMessages} onSendMessage={sendChat} />
           </TabsContent>
           <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
-            <GameSettingsPanel settings={mockGameSettings} />
+            <GameSettingsPanel settings={gameSettings} />
           </TabsContent>
         </Tabs>
       </div>

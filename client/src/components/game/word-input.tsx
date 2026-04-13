@@ -8,6 +8,7 @@ interface WordInputProps {
   gameState: GameState
   typedWord: string
   onTypedWordChange: (word: string) => void
+  onSubmitWord?: (word: string) => void
   isLocalPlayer?: boolean
 }
 
@@ -16,6 +17,7 @@ export function WordInput({
   gameState,
   typedWord,
   onTypedWordChange,
+  onSubmitWord,
   isLocalPlayer = true,
 }: WordInputProps) {
   const isMyTurn = isLocalPlayer && currentPlayer?.isActive
@@ -23,6 +25,7 @@ export function WordInput({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!typedWord.trim() || !isMyTurn) return
+    onSubmitWord?.(typedWord.trim())
     onTypedWordChange("")
   }
 
