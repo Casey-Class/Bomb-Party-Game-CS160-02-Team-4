@@ -10,6 +10,7 @@ import type {
 
 export class WebSocketGameService {
   private snapshot: GameSnapshotDto;
+  private readonly usedWords = new Set<string>();
 
   public constructor(private readonly roomId: string) {
     this.snapshot = createInitialSnapshot(roomId);
@@ -201,6 +202,13 @@ export class WebSocketGameService {
       };
     }
 
+    if (this.usedWords.has(trimmedWord)) {
+      return {
+        type: "error",
+        payload: { message: `${trimmedWord} has already been played` },
+      };
+    }
+
     const updatedPlayers = this.snapshot.players.map((player) =>
       player.id === activePlayer.id
         ? {
@@ -226,6 +234,7 @@ export class WebSocketGameService {
         this.createSystemMessage(`${activePlayer.name} played ${trimmedWord}`),
       ],
     };
+    this.usedWords.add(trimmedWord);
 
     return {
       type: "state_sync",

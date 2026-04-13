@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { toast } from "react-hot-toast"
 import {
   mockGameSettings,
   mockGameState,
@@ -114,6 +115,7 @@ export function useGameSocket(roomId: string, playerName: string): GameConnectio
       }
 
       if (parsed.type === "error") {
+        toast.error(parsed.payload.message)
         console.error(parsed.payload.message)
       }
     })
