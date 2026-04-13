@@ -9,20 +9,24 @@ import type {
 } from "./types";
 
 export class WebSocketGameService {
-  private snapshot: GameSnapshotDto = createInitialSnapshot();
+  private snapshot: GameSnapshotDto;
+
+  public constructor(private readonly roomId: string) {
+    this.snapshot = createInitialSnapshot(roomId);
+  }
 
   public getSnapshot(): GameSnapshotDto {
     return structuredClone(this.snapshot);
   }
 
-  public connectPlayer(clientId: string): GameSnapshotDto {
+  public connectPlayer(clientId: string, playerName: string): GameSnapshotDto {
     const existingPlayer = this.resolvePlayer(clientId);
 
     if (existingPlayer) {
       return this.getSnapshot();
     }
 
-    const player = createPlayer(clientId, this.snapshot.players.length + 1);
+    const player = createPlayer(clientId, playerName, this.snapshot.players.length + 1);
     const players = [...this.snapshot.players, player];
     const currentPlayerId = this.snapshot.gameState.currentPlayerId || player.id;
 
@@ -44,6 +48,10 @@ export class WebSocketGameService {
     };
 
     return this.getSnapshot();
+  }
+
+  public isEmpty() {
+    return this.snapshot.players.length === 0;
   }
 
   public disconnectPlayer(clientId: string): GameSnapshotDto {
@@ -202,10 +210,17 @@ export class WebSocketGameService {
           }
         : player,
     );
+    const nextTurn = this.getNextTurnState(updatedPlayers);
 
     this.snapshot = {
       ...this.snapshot,
-      players: this.rotateActivePlayer(updatedPlayers),
+      players: nextTurn.players,
+      gameState: {
+        ...this.snapshot.gameState,
+        currentPlayerId: nextTurn.currentPlayerId,
+        timeLeft: this.snapshot.gameState.maxTime,
+        status: "playing",
+      },
       chatMessages: [
         ...this.snapshot.chatMessages,
         this.createSystemMessage(`${activePlayer.name} played ${trimmedWord}`),
@@ -251,35 +266,34 @@ export class WebSocketGameService {
     };
   }
 
-  private rotateActivePlayer(players: PlayerDto[]): PlayerDto[] {
+  private getNextTurnState(players: PlayerDto[]) {
     const currentIndex = players.findIndex(
       (player) => player.id === this.snapshot.gameState.currentPlayerId,
     );
 
     if (currentIndex === -1 || players.length === 0) {
-      return players;
+      return {
+        players,
+        currentPlayerId: this.snapshot.gameState.currentPlayerId,
+      };
     }
 
     const nextPlayer = players[(currentIndex + 1) % players.length];
 
     if (!nextPlayer) {
-      return players;
+      return {
+        players,
+        currentPlayerId: this.snapshot.gameState.currentPlayerId,
+      };
     }
 
-    this.snapshot = {
-      ...this.snapshot,
-      gameState: {
-        ...this.snapshot.gameState,
-        currentPlayerId: nextPlayer.id,
-        timeLeft: this.snapshot.gameState.maxTime,
-        status: "playing",
-      },
+    return {
+      players: players.map((player) => ({
+        ...player,
+        isActive: player.id === nextPlayer.id,
+      })),
+      currentPlayerId: nextPlayer.id,
     };
-
-    return players.map((player) => ({
-      ...player,
-      isActive: player.id === nextPlayer.id,
-    }));
   }
 
   private resolvePlayer(clientId: string): PlayerDto | undefined {
@@ -296,5 +310,3 @@ export class WebSocketGameService {
     };
   }
 }
-
-export const webSocketGameService = new WebSocketGameService();

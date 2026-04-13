@@ -8,9 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Bomb, MessageSquare, Settings, Users } from "lucide-react"
 import { useGameSocket } from "@/lib/game-socket"
+import { getStoredPlayerName } from "@/lib/player-identity"
+import { useParams } from "react-router"
 
 export function GamePage() {
   const [typedWord, setTypedWord] = useState("")
+  const { roomId = "" } = useParams()
+  const playerName = getStoredPlayerName()
   const {
     players,
     gameState,
@@ -21,7 +25,7 @@ export function GamePage() {
     sendTypingWord,
     sendWord,
     sendChat,
-  } = useGameSocket()
+  } = useGameSocket(roomId.toUpperCase(), playerName)
   const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId)
   const aliveCount = players.filter((p) => !p.isEliminated).length
 

@@ -1,9 +1,29 @@
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { getStoredPlayerName, storePlayerName } from "@/lib/player-identity"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import { Bomb, Users } from "lucide-react"
 
+function generateRoomId() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
+}
+
 export function HomePage() {
   const navigate = useNavigate()
+  const [playerName, setPlayerName] = useState("")
+  const [roomCode, setRoomCode] = useState("")
+
+  useEffect(() => {
+    setPlayerName(getStoredPlayerName())
+  }, [])
+
+  function goToRoom(nextRoomCode: string) {
+    const normalizedRoomCode = nextRoomCode.trim().toUpperCase()
+    storePlayerName(playerName)
+
+    navigate(`/game/${normalizedRoomCode}`)
+  }
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-zinc-900 p-6">
@@ -28,13 +48,39 @@ export function HomePage() {
           </div>
         </div>
 
-        <Button
-          size="lg"
-          className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-base px-8 py-6 shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-all"
-          onClick={() => navigate("/game")}
-        >
-          Join Game
-        </Button>
+        <div className="flex w-full flex-col gap-3">
+          <Input
+            value={playerName}
+            onChange={(event) => setPlayerName(event.target.value)}
+            placeholder="Your name"
+            className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
+          />
+
+          <div className="flex gap-2">
+            <Input
+              value={roomCode}
+              onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
+              placeholder="Room code"
+              className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
+            />
+            <Button
+              size="lg"
+              className="bg-zinc-800 px-5 py-6 font-bold text-white hover:bg-zinc-700"
+              onClick={() => goToRoom(roomCode)}
+              disabled={!roomCode.trim()}
+            >
+              Join
+            </Button>
+          </div>
+
+          <Button
+            size="lg"
+            className="bg-amber-500 px-8 py-6 font-bold text-base text-black shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:bg-amber-400 hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+            onClick={() => goToRoom(generateRoomId())}
+          >
+            Create Room
+          </Button>
+        </div>
 
         <p className="text-white/20 text-xs">
           Press{" "}

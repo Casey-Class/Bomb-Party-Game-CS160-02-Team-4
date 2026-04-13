@@ -75,4 +75,6 @@ export type ServerEvent =
 
 export interface SocketData {
   clientId: string;
+  playerName: string;
+  roomId: string;
 }

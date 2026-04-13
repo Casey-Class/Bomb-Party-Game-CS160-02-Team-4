@@ -43,31 +43,31 @@ export function GameChat({ messages, onSendMessage }: GameChatProps) {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`text-sm ${msg.isSystem ? "text-center" : ""}`}
+                className="text-sm"
               >
-                {msg.isSystem ? (
-                  <span className="text-amber-400/70 text-xs italic">
-                    {msg.text}
+                <div className="flex gap-1.5 items-baseline">
+                  <span className="text-white/30 text-[10px] shrink-0">
+                    {formatTime(msg.timestamp)}
                   </span>
-                ) : (
-                  <div className="flex gap-1.5 items-baseline">
-                    <span className="text-white/30 text-[10px] shrink-0">
-                      {formatTime(msg.timestamp)}
-                    </span>
-                    <span
-                      className={`font-semibold text-xs shrink-0 ${
-                        msg.author === "You"
+                  <span
+                    className={`font-semibold text-xs shrink-0 ${
+                      msg.isSystem
+                        ? "text-amber-400/80"
+                        : msg.author === "You"
                           ? "text-amber-400"
                           : "text-white/70"
-                      }`}
-                    >
-                      {msg.author}:
-                    </span>
-                    <span className="text-white/80 text-xs break-all">
-                      {msg.text}
-                    </span>
-                  </div>
-                )}
+                    }`}
+                  >
+                    {msg.author}:
+                  </span>
+                  <span
+                    className={`text-xs break-all ${
+                      msg.isSystem ? "text-white/70" : "text-white/80"
+                    }`}
+                  >
+                    {msg.text}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

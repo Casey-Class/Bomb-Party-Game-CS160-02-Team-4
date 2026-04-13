@@ -13,7 +13,7 @@ const AVATAR_COLORS = [
   "#8bc34a",
 ];
 
-export function createInitialSnapshot(): GameSnapshotDto {
+export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
   return {
     players: [],
     gameState: {
@@ -39,16 +39,16 @@ export function createInitialSnapshot(): GameSnapshotDto {
       timePerTurn: 15,
       startingLives: 3,
       minWordLength: 3,
-      roomCode: "BOMB-42X",
+      roomCode,
       isPublic: true,
     },
   };
 }
 
-export function createPlayer(clientId: string, playerCount: number): PlayerDto {
+export function createPlayer(clientId: string, playerName: string, playerCount: number): PlayerDto {
   return {
     id: clientId,
-    name: `Player ${playerCount}`,
+    name: playerName || `Player ${playerCount}`,
     avatarUrl: null,
     avatarColor: AVATAR_COLORS[(playerCount - 1) % AVATAR_COLORS.length] ?? "#607d8b",
     lives: 3,

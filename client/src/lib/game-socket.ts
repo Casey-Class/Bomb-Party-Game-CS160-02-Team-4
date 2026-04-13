@@ -45,24 +45,32 @@ interface GameConnectionState {
   sendChat: (text: string) => void
 }
 
-const fallbackState = {
+interface GameDataState {
+  players: Player[]
+  gameState: GameState
+  chatMessages: ChatMessage[]
+  gameSettings: GameSettings
+}
+
+const fallbackState: GameDataState = {
   players: [] as Player[],
   gameState: {
     ...mockGameState,
     currentPlayerId: "",
-    status: "waiting" as const,
+    status: "waiting",
   },
   chatMessages: [] as ChatMessage[],
   gameSettings: mockGameSettings,
 }
 
-function getSocketUrl() {
-  if (import.meta.env.DEV) {
-    return "ws://localhost:5555/ws"
-  }
-
+function getSocketUrl(roomId: string, playerName: string) {
+  const query = new URLSearchParams({
+    roomId,
+    playerName,
+  });
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
-  return `${protocol}//${window.location.host}/ws`
+  const host = import.meta.env.DEV ? "localhost:5555" : window.location.host
+  return `${protocol}//${host}/ws?${query.toString()}`
 }
 
 function hydrateSnapshot(snapshot: GameSnapshotDto) {
@@ -77,7 +85,7 @@ function hydrateSnapshot(snapshot: GameSnapshotDto) {
   }
 }
 
-export function useGameSocket(): GameConnectionState {
+export function useGameSocket(roomId: string, playerName: string): GameConnectionState {
   const [gameData, setGameData] = useState(fallbackState)
   const [connectionStatus, setConnectionStatus] =
     useState<GameConnectionState["connectionStatus"]>("connecting")
@@ -85,7 +93,7 @@ export function useGameSocket(): GameConnectionState {
   const socketRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
-    const socket = new WebSocket(getSocketUrl())
+    const socket = new WebSocket(getSocketUrl(roomId, playerName))
     socketRef.current = socket
 
     socket.addEventListener("open", () => {
@@ -122,7 +130,7 @@ export function useGameSocket(): GameConnectionState {
       socket.close()
       socketRef.current = null
     }
-  }, [])
+  }, [playerName, roomId])
 
   function send(event: ClientEvent) {
     const socket = socketRef.current
