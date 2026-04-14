@@ -8,6 +8,7 @@ export interface PlayerDto {
   score: number;
   isActive: boolean;
   isEliminated: boolean;
+  isConnected: boolean;
   currentWord: string | null;
 }
 
@@ -17,6 +18,7 @@ export interface GameStateDto {
   maxTime: number;
   round: number;
   currentPlayerId: string;
+  winnerId: string | null;
   turnDirection: "clockwise" | "counterclockwise";
   status: "waiting" | "playing" | "ended";
 }
@@ -47,6 +49,9 @@ export interface GameSnapshotDto {
 
 export type ClientEvent =
   | {
+      type: "start_game";
+    }
+  | {
       type: "typing_word";
       payload: { word: string };
     }
@@ -75,6 +80,7 @@ export type ServerEvent =
 
 export interface SocketData {
   clientId: string;
+  playerId: string;
   playerName: string;
   roomId: string;
 }

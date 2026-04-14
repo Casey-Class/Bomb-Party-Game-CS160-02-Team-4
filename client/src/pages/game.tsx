@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { PlayerCircle } from "@/components/game/player-circle"
 import { BombPrompt } from "@/components/game/bomb-prompt"
 import { WordInput } from "@/components/game/word-input"
@@ -6,15 +5,21 @@ import { GameSettingsPanel } from "@/components/game/game-settings"
 import { GameChat } from "@/components/game/game-chat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Bomb, MessageSquare, Settings, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Bomb, MessageSquare, Play, RotateCcw, Settings, Users } from "lucide-react"
 import { useGameSocket } from "@/lib/game-socket"
-import { getStoredPlayerName } from "@/lib/player-identity"
+import { getStoredPlayerId, getStoredPlayerName } from "@/lib/player-identity"
 import { useParams } from "react-router"
 
+function getActivePlayerAngle(playerCount: number, activePlayerIndex: number) {
+  if (activePlayerIndex < 0 || playerCount === 0) return 0
+  return (2 * Math.PI * activePlayerIndex) / playerCount - Math.PI / 2
+}
+
 export function GamePage() {
-  const [typedWord, setTypedWord] = useState("")
   const { roomId = "" } = useParams()
   const playerName = getStoredPlayerName()
+  const localPlayerId = getStoredPlayerId()
   const {
     players,
     gameState,
@@ -22,18 +27,23 @@ export function GamePage() {
     gameSettings,
     connectionStatus,
     clientId,
+    startGame,
     sendTypingWord,
     sendWord,
     sendChat,
   } = useGameSocket(roomId.toUpperCase(), playerName)
   const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId)
+  const localPlayer = players.find((p) => p.id === localPlayerId)
+  const winner = players.find((p) => p.id === gameState.winnerId)
   const aliveCount = players.filter((p) => !p.isEliminated).length
+  const connectedCount = players.filter((p) => p.isConnected).length
+  const typedWord = localPlayer?.currentWord ?? ""
+  const canStart = players.length >= 2 && gameState.status !== "playing"
 
   const activePlayerIndex = players.findIndex((p) => p.id === gameState.currentPlayerId)
-  const activePlayerAngle =
-    activePlayerIndex >= 0 && players.length > 0
-      ? (2 * Math.PI * activePlayerIndex) / players.length - Math.PI / 2
-      : 0
+  const activePlayerAngle = getActivePlayerAngle(players.length, activePlayerIndex)
+  const isLocalPlayersTurn =
+    gameState.currentPlayerId === localPlayerId || gameState.currentPlayerId === clientId
 
   return (
     <div className="flex h-svh w-full bg-zinc-900 overflow-hidden">
@@ -54,6 +64,22 @@ export function GamePage() {
             >
               {connectionStatus}
             </Badge>
+            {gameState.status === "waiting" && (
+              <Badge
+                variant="outline"
+                className="border-sky-400/30 text-sky-300 text-xs"
+              >
+                Lobby
+              </Badge>
+            )}
+            {gameState.status === "ended" && winner && (
+              <Badge
+                variant="outline"
+                className="border-emerald-400/30 text-emerald-300 text-xs"
+              >
+                Winner: {winner.name}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3 text-xs text-white/50">
             <div className="flex items-center gap-1">
@@ -62,21 +88,32 @@ export function GamePage() {
                 {aliveCount}/{players.length} alive
               </span>
             </div>
+            <div>{connectedCount} connected</div>
             <Badge
               variant="outline"
               className="border-amber-400/30 text-amber-400 text-xs"
             >
               Round {gameState.round}
             </Badge>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 gap-1 bg-zinc-800 text-white hover:bg-zinc-700"
+              onClick={startGame}
+              disabled={!canStart}
+            >
+              {gameState.status === "ended" ? (
+                <RotateCcw className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              {gameState.status === "ended" ? "Restart" : "Start"}
+            </Button>
           </div>
         </div>
 
         <div className="flex-1 relative min-h-0">
-          <PlayerCircle
-            players={players}
-            currentSyllable={gameState.currentSyllable}
-            activePlayerTypedWord={typedWord}
-          />
+          <PlayerCircle players={players} currentSyllable={gameState.currentSyllable} />
           <BombPrompt gameState={gameState} activePlayerAngle={activePlayerAngle} />
         </div>
 
@@ -85,12 +122,9 @@ export function GamePage() {
             currentPlayer={currentPlayer}
             gameState={gameState}
             typedWord={typedWord}
-            onTypedWordChange={(word) => {
-              setTypedWord(word)
-              sendTypingWord(word)
-            }}
+            onTypedWordChange={sendTypingWord}
             onSubmitWord={sendWord}
-            isLocalPlayer={gameState.currentPlayerId === clientId}
+            isLocalPlayer={isLocalPlayersTurn}
           />
         </div>
       </div>

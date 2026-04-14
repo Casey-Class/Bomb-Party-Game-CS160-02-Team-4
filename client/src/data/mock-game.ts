@@ -8,6 +8,7 @@ export interface Player {
   score: number
   isActive: boolean
   isEliminated: boolean
+  isConnected: boolean
   currentWord: string | null
 }
 
@@ -17,6 +18,7 @@ export interface GameState {
   maxTime: number
   round: number
   currentPlayerId: string
+  winnerId: string | null
   turnDirection: "clockwise" | "counterclockwise"
   status: "waiting" | "playing" | "ended"
 }
@@ -72,6 +74,7 @@ export const mockPlayers: Player[] = [
     score: 245,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: "QUEST",
   },
   {
@@ -84,6 +87,7 @@ export const mockPlayers: Player[] = [
     score: 312,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: "TELLERS",
   },
   {
@@ -96,6 +100,7 @@ export const mockPlayers: Player[] = [
     score: 58,
     isActive: false,
     isEliminated: true,
+    isConnected: true,
     currentWord: "MEDIAN",
   },
   {
@@ -108,6 +113,7 @@ export const mockPlayers: Player[] = [
     score: 42,
     isActive: false,
     isEliminated: true,
+    isConnected: true,
     currentWord: null,
   },
   {
@@ -120,6 +126,7 @@ export const mockPlayers: Player[] = [
     score: 189,
     isActive: true,
     isEliminated: false,
+    isConnected: true,
     currentWord: null,
   },
   {
@@ -132,6 +139,7 @@ export const mockPlayers: Player[] = [
     score: 15,
     isActive: false,
     isEliminated: true,
+    isConnected: true,
     currentWord: null,
   },
   {
@@ -144,6 +152,7 @@ export const mockPlayers: Player[] = [
     score: 167,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: "JOGGING",
   },
   {
@@ -156,6 +165,7 @@ export const mockPlayers: Player[] = [
     score: 33,
     isActive: false,
     isEliminated: true,
+    isConnected: true,
     currentWord: null,
   },
   {
@@ -168,6 +178,7 @@ export const mockPlayers: Player[] = [
     score: 201,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: "LOGICAL",
   },
   {
@@ -180,6 +191,7 @@ export const mockPlayers: Player[] = [
     score: 178,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: "LOGGING",
   },
 ]
@@ -190,6 +202,7 @@ export const mockGameState: GameState = {
   maxTime: 15,
   round: 4,
   currentPlayerId: "p5",
+  winnerId: null,
   turnDirection: "clockwise",
   status: "playing",
 }

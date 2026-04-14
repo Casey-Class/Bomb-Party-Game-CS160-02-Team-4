@@ -4,6 +4,10 @@ import type { ServerEvent, SocketData } from "./types";
 
 const clientsByRoom = new Map<string, Set<ServerWebSocket<SocketData>>>();
 const roomServices = new Map<string, WebSocketGameService>();
+const roomTickers = new Map<string, ReturnType<typeof setInterval>>();
+const disconnectCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const DISCONNECT_GRACE_PERIOD_MS = 30_000;
+const TICK_INTERVAL_MS = 1000;
 
 function send(ws: ServerWebSocket<SocketData>, event: ServerEvent) {
   ws.send(JSON.stringify(event));
@@ -31,6 +35,40 @@ function getRoomService(roomId: string) {
   return roomService;
 }
 
+function getDisconnectKey(roomId: string, playerId: string) {
+  return `${roomId}:${playerId}`;
+}
+
+function clearDisconnectCleanup(roomId: string, playerId: string) {
+  const key = getDisconnectKey(roomId, playerId);
+  const timeout = disconnectCleanupTimers.get(key);
+
+  if (!timeout) {
+    return;
+  }
+
+  clearTimeout(timeout);
+  disconnectCleanupTimers.delete(key);
+}
+
+function ensureRoomTicker(roomId: string) {
+  if (roomTickers.has(roomId)) {
+    return;
+  }
+
+  const ticker = setInterval(() => {
+    const response = getRoomService(roomId).tick();
+
+    if (!response) {
+      return;
+    }
+
+    broadcast(roomId, response);
+  }, TICK_INTERVAL_MS);
+
+  roomTickers.set(roomId, ticker);
+}
+
 function cleanupRoom(roomId: string) {
   const clients = clientsByRoom.get(roomId);
   const roomService = roomServices.get(roomId);
@@ -41,6 +79,15 @@ function cleanupRoom(roomId: string) {
 
   if (roomService?.isEmpty()) {
     roomServices.delete(roomId);
+  }
+
+  if (!roomServices.has(roomId)) {
+    const ticker = roomTickers.get(roomId);
+
+    if (ticker) {
+      clearInterval(ticker);
+      roomTickers.delete(roomId);
+    }
   }
 }
 
@@ -56,14 +103,16 @@ export function handleWebSocketUpgrade(req: Request, server: Bun.Server<SocketDa
   const url = new URL(req.url);
   const roomId = url.searchParams.get("roomId")?.trim().toUpperCase();
   const playerName = url.searchParams.get("playerName")?.trim() || "Player";
+  const playerId = url.searchParams.get("playerId")?.trim();
 
-  if (!roomId) {
+  if (!roomId || !playerId) {
     return false;
   }
 
   return server.upgrade(req, {
     data: {
       clientId: `client-${Math.floor(Math.random() * 1_000_000)}`,
+      playerId,
       playerName,
       roomId,
     },
@@ -72,34 +121,32 @@ export function handleWebSocketUpgrade(req: Request, server: Bun.Server<SocketDa
 
 export const websocket = {
   open(ws: ServerWebSocket<SocketData>) {
-    getRoomClients(ws.data.roomId).add(ws);
+    const { playerId, playerName, roomId } = ws.data;
+    getRoomClients(roomId).add(ws);
+    clearDisconnectCleanup(roomId, playerId);
+    ensureRoomTicker(roomId);
 
     send(ws, {
       type: "connected",
       payload: { clientId: ws.data.clientId },
     });
 
-    broadcast(ws.data.roomId, {
+    broadcast(roomId, {
       type: "state_sync",
-      payload: getRoomService(ws.data.roomId).connectPlayer(
-        ws.data.clientId,
-        ws.data.playerName,
-      ),
+      payload: getRoomService(roomId).connectPlayer(playerId, playerName),
     });
   },
 
   message(ws: ServerWebSocket<SocketData>, message: string | Buffer) {
-    const response = getRoomService(ws.data.roomId).handleMessage(
-      ws.data.clientId,
-      String(message),
-    );
+    const { playerId, roomId } = ws.data;
+    const response = getRoomService(roomId).handleMessage(playerId, String(message));
 
     if (!response) {
       return;
     }
 
     if (response.type === "state_sync") {
-      broadcast(ws.data.roomId, response);
+      broadcast(roomId, response);
       return;
     }
 
@@ -107,14 +154,27 @@ export const websocket = {
   },
 
   close(ws: ServerWebSocket<SocketData>) {
-    const roomClients = getRoomClients(ws.data.roomId);
+    const { playerId, roomId } = ws.data;
+    const roomClients = getRoomClients(roomId);
     roomClients.delete(ws);
 
-    broadcast(ws.data.roomId, {
+    broadcast(roomId, {
       type: "state_sync",
-      payload: getRoomService(ws.data.roomId).disconnectPlayer(ws.data.clientId),
+      payload: getRoomService(roomId).markPlayerDisconnected(playerId),
     });
 
-    cleanupRoom(ws.data.roomId);
+    const cleanupKey = getDisconnectKey(roomId, playerId);
+    const cleanupTimer = setTimeout(() => {
+      disconnectCleanupTimers.delete(cleanupKey);
+      broadcast(roomId, {
+        type: "state_sync",
+        payload: getRoomService(roomId).removePlayer(playerId),
+      });
+      cleanupRoom(roomId);
+    }, DISCONNECT_GRACE_PERIOD_MS);
+
+    disconnectCleanupTimers.set(cleanupKey, cleanupTimer);
+
+    cleanupRoom(roomId);
   },
 };

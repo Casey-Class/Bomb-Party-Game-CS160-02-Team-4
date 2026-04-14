@@ -8,8 +8,15 @@ interface BombPromptProps {
 
 export function BombPrompt({ gameState, activePlayerAngle }: BombPromptProps) {
   const { currentSyllable, timeLeft, maxTime } = gameState
-  const timeRemainingPercent = (timeLeft / maxTime) * 100
-  const isUrgent = timeLeft <= 5
+  const normalizedMaxTime = Math.max(maxTime, 1)
+  const timeRemainingPercent = (timeLeft / normalizedMaxTime) * 100
+  const isUrgent = gameState.status === "playing" && timeLeft <= 5
+  const syllableLabel =
+    gameState.status === "waiting"
+      ? "WAIT"
+      : gameState.status === "ended"
+        ? "DONE"
+        : currentSyllable
 
   const timerRadius = 58
   const timerCircumference = 2 * Math.PI * timerRadius
@@ -39,7 +46,7 @@ export function BombPrompt({ gameState, activePlayerAngle }: BombPromptProps) {
         >
           <div className="w-20 h-20 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center">
             <span className={`text-2xl font-black tracking-wider ${syllableColor}`}>
-              {currentSyllable}
+              {syllableLabel}
             </span>
           </div>
         </div>

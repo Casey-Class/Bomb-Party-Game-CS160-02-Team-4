@@ -8,6 +8,7 @@ import {
   type GameState,
   type Player,
 } from "@/data/mock-game"
+import { getStoredPlayerId } from "@/lib/player-identity"
 
 interface ChatMessageDto {
   id: string
@@ -30,6 +31,7 @@ type ServerEvent =
   | { type: "error"; payload: { message: string } }
 
 type ClientEvent =
+  | { type: "start_game" }
   | { type: "typing_word"; payload: { word: string } }
   | { type: "submit_word"; payload: { word: string } }
   | { type: "send_chat"; payload: { text: string } }
@@ -41,6 +43,8 @@ interface GameConnectionState {
   gameSettings: GameSettings
   connectionStatus: "connecting" | "connected" | "disconnected"
   clientId: string | null
+  playerId: string
+  startGame: () => void
   sendTypingWord: (word: string) => void
   sendWord: (word: string) => void
   sendChat: (text: string) => void
@@ -57,17 +61,20 @@ const fallbackState: GameDataState = {
   players: [] as Player[],
   gameState: {
     ...mockGameState,
+    round: 0,
     currentPlayerId: "",
+    winnerId: null,
     status: "waiting",
   },
   chatMessages: [] as ChatMessage[],
   gameSettings: mockGameSettings,
 }
 
-function getSocketUrl(roomId: string, playerName: string) {
+function getSocketUrl(roomId: string, playerName: string, playerId: string) {
   const query = new URLSearchParams({
     roomId,
     playerName,
+    playerId,
   });
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
   const host = import.meta.env.DEV ? "localhost:5555" : window.location.host
@@ -92,9 +99,10 @@ export function useGameSocket(roomId: string, playerName: string): GameConnectio
     useState<GameConnectionState["connectionStatus"]>("connecting")
   const [clientId, setClientId] = useState<string | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
+  const playerIdRef = useRef(getStoredPlayerId())
 
   useEffect(() => {
-    const socket = new WebSocket(getSocketUrl(roomId, playerName))
+    const socket = new WebSocket(getSocketUrl(roomId, playerName, playerIdRef.current))
     socketRef.current = socket
 
     socket.addEventListener("open", () => {
@@ -148,6 +156,10 @@ export function useGameSocket(roomId: string, playerName: string): GameConnectio
     ...gameData,
     connectionStatus,
     clientId,
+    playerId: playerIdRef.current,
+    startGame() {
+      send({ type: "start_game" })
+    },
     sendTypingWord(word: string) {
       send({ type: "typing_word", payload: { word } })
     },

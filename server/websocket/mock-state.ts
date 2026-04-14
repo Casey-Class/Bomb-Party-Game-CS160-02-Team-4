@@ -20,8 +20,9 @@ export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
       currentSyllable: "OGI",
       timeLeft: 15,
       maxTime: 15,
-      round: 1,
+      round: 0,
       currentPlayerId: "",
+      winnerId: null,
       turnDirection: "clockwise",
       status: "waiting",
     },
@@ -56,6 +57,7 @@ export function createPlayer(clientId: string, playerName: string, playerCount: 
     score: 0,
     isActive: false,
     isEliminated: false,
+    isConnected: true,
     currentWord: null,
   };
 }
