@@ -8,6 +8,7 @@ interface WordInputProps {
   gameState: GameState
   typedWord: string
   onTypedWordChange: (word: string) => void
+  onSubmitWord?: (word: string) => void
   isLocalPlayer?: boolean
 }
 
@@ -16,13 +17,16 @@ export function WordInput({
   gameState,
   typedWord,
   onTypedWordChange,
+  onSubmitWord,
   isLocalPlayer = true,
 }: WordInputProps) {
-  const isMyTurn = isLocalPlayer && currentPlayer?.isActive
+  const isPlaying = gameState.status === "playing"
+  const isMyTurn = isPlaying && isLocalPlayer && currentPlayer?.isActive
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!typedWord.trim() || !isMyTurn) return
+    onSubmitWord?.(typedWord.trim())
     onTypedWordChange("")
   }
 
@@ -30,7 +34,11 @@ export function WordInput({
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-2">
         <span className="text-sm font-medium text-white/70">
-          {isMyTurn ? (
+          {gameState.status === "waiting" ? (
+            <span>Waiting for someone to start the game</span>
+          ) : gameState.status === "ended" ? (
+            <span className="text-emerald-300 font-semibold">Game over</span>
+          ) : isMyTurn ? (
             <span className="text-amber-400 font-bold animate-pulse">
               Your Turn! Type a word containing &quot;
               {gameState.currentSyllable}&quot;
@@ -52,7 +60,9 @@ export function WordInput({
           value={typedWord}
           onChange={(e) => onTypedWordChange(e.target.value.toUpperCase())}
           placeholder={
-            isMyTurn
+            !isPlaying
+              ? "Game not active"
+              : isMyTurn
               ? `Type a word with "${gameState.currentSyllable}"...`
               : "Not your turn"
           }
@@ -73,4 +83,3 @@ export function WordInput({
     </div>
   )
 }
-

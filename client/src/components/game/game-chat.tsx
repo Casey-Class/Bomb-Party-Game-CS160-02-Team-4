@@ -7,14 +7,14 @@ import { Send } from "lucide-react"
 
 interface GameChatProps {
   messages: ChatMessage[]
+  onSendMessage?: (message: string) => void
 }
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
-export function GameChat({ messages: initialMessages }: GameChatProps) {
-  const [messages, setMessages] = useState(initialMessages)
+export function GameChat({ messages, onSendMessage }: GameChatProps) {
   const [newMessage, setNewMessage] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -28,57 +28,55 @@ export function GameChat({ messages: initialMessages }: GameChatProps) {
     e.preventDefault()
     if (!newMessage.trim()) return
 
-    const msg: ChatMessage = {
-      id: `c${Date.now()}`,
-      author: "You",
-      text: newMessage.trim(),
-      timestamp: new Date(),
-      isSystem: false,
-    }
-    setMessages((prev) => [...prev, msg])
+    onSendMessage?.(newMessage.trim())
     setNewMessage("")
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+    <div className="flex h-full min-h-0 flex-col">
+      <ScrollArea
+        ref={scrollRef}
+        className="min-h-0 flex-1"
+      >
         <div className="flex flex-col gap-1.5">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`text-sm ${msg.isSystem ? "text-center" : ""}`}
-            >
-              {msg.isSystem ? (
-                <span className="text-amber-400/70 text-xs italic">
-                  {msg.text}
-                </span>
-              ) : (
+          <div className="p-3">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className="text-sm"
+              >
                 <div className="flex gap-1.5 items-baseline">
                   <span className="text-white/30 text-[10px] shrink-0">
                     {formatTime(msg.timestamp)}
                   </span>
                   <span
                     className={`font-semibold text-xs shrink-0 ${
-                      msg.author === "You"
-                        ? "text-amber-400"
-                        : "text-white/70"
+                      msg.isSystem
+                        ? "text-amber-400/80"
+                        : msg.author === "You"
+                          ? "text-amber-400"
+                          : "text-white/70"
                     }`}
                   >
                     {msg.author}:
                   </span>
-                  <span className="text-white/80 text-xs break-all">
+                  <span
+                    className={`text-xs break-all ${
+                      msg.isSystem ? "text-white/70" : "text-white/80"
+                    }`}
+                  >
                     {msg.text}
                   </span>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </ScrollArea>
 
       <form
         onSubmit={handleSend}
-        className="p-2 border-t border-white/10 flex gap-1.5"
+        className="flex gap-1.5 border-t border-white/10 p-2"
       >
         <Input
           id="chat-input"

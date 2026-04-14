@@ -5,7 +5,6 @@ interface PlayerNodeProps {
   player: Player
   style: React.CSSProperties
   currentSyllable: string
-  activePlayerTypedWord: string
 }
 
 function highlightSyllable(
@@ -34,12 +33,11 @@ function highlightSyllable(
   )
 }
 
-function PlayerNode({ player, style, currentSyllable, activePlayerTypedWord }: PlayerNodeProps) {
+function PlayerNode({ player, style, currentSyllable }: PlayerNodeProps) {
   const isEliminated = player.isEliminated
   const isActive = player.isActive
-  const displayedWord = isActive && activePlayerTypedWord
-    ? activePlayerTypedWord
-    : player.currentWord
+  const isDisconnected = !player.isConnected
+  const displayedWord = player.currentWord
 
   return (
     <div
@@ -50,9 +48,11 @@ function PlayerNode({ player, style, currentSyllable, activePlayerTypedWord }: P
       }}
     >
       <span
-        className={`text-xs font-semibold truncate max-w-[120px] ${
+        className={`text-xs font-semibold truncate max-w-30 ${
           isEliminated
             ? "text-muted-foreground/50 italic line-through"
+            : isDisconnected
+              ? "text-white/40"
             : isActive
               ? "text-amber-300"
               : "text-white/90"
@@ -78,6 +78,8 @@ function PlayerNode({ player, style, currentSyllable, activePlayerTypedWord }: P
         className={`relative w-14 h-14 rounded-sm overflow-hidden border-2 transition-all duration-300 ${
           isEliminated
             ? "border-muted-foreground/30 grayscale opacity-50"
+            : isDisconnected
+              ? "border-white/10 opacity-60"
             : isActive
               ? "border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)]"
               : "border-white/20"
@@ -108,6 +110,12 @@ function PlayerNode({ player, style, currentSyllable, activePlayerTypedWord }: P
           {highlightSyllable(displayedWord, currentSyllable)}
         </span>
       )}
+
+      {!isEliminated && isDisconnected && (
+        <span className="text-[10px] uppercase tracking-wide text-white/35">
+          Reconnecting
+        </span>
+      )}
     </div>
   )
 }
@@ -115,10 +123,9 @@ function PlayerNode({ player, style, currentSyllable, activePlayerTypedWord }: P
 interface PlayerCircleProps {
   players: Player[]
   currentSyllable: string
-  activePlayerTypedWord: string
 }
 
-export function PlayerCircle({ players, currentSyllable, activePlayerTypedWord }: PlayerCircleProps) {
+export function PlayerCircle({ players, currentSyllable }: PlayerCircleProps) {
   const centerX = 50
   const centerY = 50
   const radiusX = 38
@@ -137,7 +144,6 @@ export function PlayerCircle({ players, currentSyllable, activePlayerTypedWord }
             key={player.id}
             player={player}
             currentSyllable={currentSyllable}
-            activePlayerTypedWord={activePlayerTypedWord}
             style={{
               left: `${x}%`,
               top: `${y}%`,
