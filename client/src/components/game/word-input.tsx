@@ -1,15 +1,15 @@
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Send } from "lucide-react"
-import { type Player, type GameState } from "@/data/mock-game"
+import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { GameState, Player } from "@/data/mock-game";
 
 interface WordInputProps {
-  currentPlayer: Player | undefined
-  gameState: GameState
-  typedWord: string
-  onTypedWordChange: (word: string) => void
-  onSubmitWord?: (word: string) => void
-  isLocalPlayer?: boolean
+  currentPlayer: Player | undefined;
+  gameState: GameState;
+  isLocalPlayer?: boolean;
+  onSubmitWord?: (word: string) => void;
+  onTypedWordChange: (word: string) => void;
+  typedWord: string;
 }
 
 export function WordInput({
@@ -20,66 +20,76 @@ export function WordInput({
   onSubmitWord,
   isLocalPlayer = true,
 }: WordInputProps) {
-  const isPlaying = gameState.status === "playing"
-  const isMyTurn = isPlaying && isLocalPlayer && currentPlayer?.isActive
+  const isPlaying = gameState.status === "playing";
+  const isMyTurn = isPlaying && isLocalPlayer && currentPlayer?.isActive;
+  let statusMessage: React.ReactNode = (
+    <span>
+      Waiting for{" "}
+      <span className="font-semibold text-white">
+        {currentPlayer?.name ?? "..."}
+      </span>
+    </span>
+  );
+  let inputPlaceholder = "Game not active";
+
+  if (gameState.status === "waiting") {
+    statusMessage = <span>Waiting for someone to start the game</span>;
+  } else if (gameState.status === "ended") {
+    statusMessage = (
+      <span className="font-semibold text-emerald-300">Game over</span>
+    );
+  } else if (isMyTurn) {
+    statusMessage = (
+      <span className="animate-pulse font-bold text-amber-400">
+        Your Turn! Type a word containing &quot;
+        {gameState.currentSyllable}&quot;
+      </span>
+    );
+  }
+
+  if (isPlaying) {
+    inputPlaceholder = isMyTurn
+      ? `Type a word with "${gameState.currentSyllable}"...`
+      : "Not your turn";
+  }
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!typedWord.trim() || !isMyTurn) return
-    onSubmitWord?.(typedWord.trim())
-    onTypedWordChange("")
+    e.preventDefault();
+    if (!(typedWord.trim() && isMyTurn)) {
+      return;
+    }
+    onSubmitWord?.(typedWord.trim());
+    onTypedWordChange("");
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-2">
-        <span className="text-sm font-medium text-white/70">
-          {gameState.status === "waiting" ? (
-            <span>Waiting for someone to start the game</span>
-          ) : gameState.status === "ended" ? (
-            <span className="text-emerald-300 font-semibold">Game over</span>
-          ) : isMyTurn ? (
-            <span className="text-amber-400 font-bold animate-pulse">
-              Your Turn! Type a word containing &quot;
-              {gameState.currentSyllable}&quot;
-            </span>
-          ) : (
-            <span>
-              Waiting for{" "}
-              <span className="text-white font-semibold">
-                {currentPlayer?.name ?? "..."}
-              </span>
-            </span>
-          )}
+    <div className="mx-auto w-full max-w-md">
+      <div className="mb-2 text-center">
+        <span className="font-medium text-sm text-white/70">
+          {statusMessage}
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form className="flex gap-2" onSubmit={handleSubmit}>
         <Input
-          id="word-input"
-          value={typedWord}
-          onChange={(e) => onTypedWordChange(e.target.value.toUpperCase())}
-          placeholder={
-            !isPlaying
-              ? "Game not active"
-              : isMyTurn
-              ? `Type a word with "${gameState.currentSyllable}"...`
-              : "Not your turn"
-          }
-          disabled={!isMyTurn}
-          className="bg-zinc-800/80 border-white/10 text-white placeholder:text-white/30 font-mono tracking-wider text-center text-lg"
           autoComplete="off"
           autoFocus={isMyTurn}
+          className="border-white/10 bg-zinc-800/80 text-center font-mono text-lg text-white tracking-wider placeholder:text-white/30"
+          disabled={!isMyTurn}
+          id="word-input"
+          onChange={(e) => onTypedWordChange(e.target.value.toUpperCase())}
+          placeholder={inputPlaceholder}
+          value={typedWord}
         />
         <Button
-          type="submit"
-          disabled={!isMyTurn || !typedWord.trim()}
+          className="shrink-0 bg-amber-500 text-black hover:bg-amber-400"
+          disabled={!(isMyTurn && typedWord.trim())}
           size="icon"
-          className="bg-amber-500 hover:bg-amber-400 text-black shrink-0"
+          type="submit"
         >
           <Send className="h-4 w-4" />
         </Button>
       </form>
     </div>
-  )
+  );
 }

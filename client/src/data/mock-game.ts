@@ -1,43 +1,43 @@
 export interface Player {
-  id: string
-  name: string
-  avatarUrl: string | null
-  avatarColor: string
-  lives: number
-  maxLives: number
-  score: number
-  isActive: boolean
-  isEliminated: boolean
-  isConnected: boolean
-  currentWord: string | null
+  avatarColor: string;
+  avatarUrl: string | null;
+  currentWord: string | null;
+  id: string;
+  isActive: boolean;
+  isConnected: boolean;
+  isEliminated: boolean;
+  lives: number;
+  maxLives: number;
+  name: string;
+  score: number;
 }
 
 export interface GameState {
-  currentSyllable: string
-  timeLeft: number
-  maxTime: number
-  round: number
-  currentPlayerId: string
-  winnerId: string | null
-  turnDirection: "clockwise" | "counterclockwise"
-  status: "waiting" | "playing" | "ended"
+  currentPlayerId: string;
+  currentSyllable: string;
+  maxTime: number;
+  round: number;
+  status: "waiting" | "playing" | "ended";
+  timeLeft: number;
+  turnDirection: "clockwise" | "counterclockwise";
+  winnerId: string | null;
 }
 
 export interface ChatMessage {
-  id: string
-  author: string
-  text: string
-  timestamp: Date
-  isSystem: boolean
+  author: string;
+  id: string;
+  isSystem: boolean;
+  text: string;
+  timestamp: Date;
 }
 
 export interface GameSettings {
-  maxPlayers: number
-  timePerTurn: number
-  startingLives: number
-  minWordLength: number
-  roomCode: string
-  isPublic: boolean
+  isPublic: boolean;
+  maxPlayers: number;
+  minWordLength: number;
+  roomCode: string;
+  startingLives: number;
+  timePerTurn: number;
 }
 
 const AVATAR_COLORS = [
@@ -61,7 +61,7 @@ const AVATAR_COLORS = [
   "#03a9f4",
   "#cddc39",
   "#f44336",
-]
+];
 
 export const mockPlayers: Player[] = [
   {
@@ -194,7 +194,7 @@ export const mockPlayers: Player[] = [
     isConnected: true,
     currentWord: "LOGGING",
   },
-]
+];
 
 export const mockGameState: GameState = {
   currentSyllable: "OGI",
@@ -205,73 +205,73 @@ export const mockGameState: GameState = {
   winnerId: null,
   turnDirection: "clockwise",
   status: "playing",
-}
+};
 
 export const mockChatMessages: ChatMessage[] = [
   {
     id: "c1",
     author: "System",
     text: "Game started! Round 1",
-    timestamp: new Date(Date.now() - 300000),
+    timestamp: new Date(Date.now() - 300_000),
     isSystem: true,
   },
   {
     id: "c2",
     author: "Alex",
     text: "good luck everyone!",
-    timestamp: new Date(Date.now() - 280000),
+    timestamp: new Date(Date.now() - 280_000),
     isSystem: false,
   },
   {
     id: "c3",
     author: "Jordan",
     text: "let's go!",
-    timestamp: new Date(Date.now() - 250000),
+    timestamp: new Date(Date.now() - 250_000),
     isSystem: false,
   },
   {
     id: "c4",
     author: "System",
     text: "Morgan has been eliminated!",
-    timestamp: new Date(Date.now() - 200000),
+    timestamp: new Date(Date.now() - 200_000),
     isSystem: true,
   },
   {
     id: "c5",
     author: "Jamie",
     text: "nice try Morgan",
-    timestamp: new Date(Date.now() - 180000),
+    timestamp: new Date(Date.now() - 180_000),
     isSystem: false,
   },
   {
     id: "c6",
     author: "Casey",
     text: "these syllables are tricky",
-    timestamp: new Date(Date.now() - 120000),
+    timestamp: new Date(Date.now() - 120_000),
     isSystem: false,
   },
   {
     id: "c7",
     author: "System",
     text: "Round 4 started!",
-    timestamp: new Date(Date.now() - 60000),
+    timestamp: new Date(Date.now() - 60_000),
     isSystem: true,
   },
   {
     id: "c8",
     author: "Sam",
     text: "this is so fun",
-    timestamp: new Date(Date.now() - 30000),
+    timestamp: new Date(Date.now() - 30_000),
     isSystem: false,
   },
   {
     id: "c9",
     author: "Riley",
     text: "good game everyone",
-    timestamp: new Date(Date.now() - 15000),
+    timestamp: new Date(Date.now() - 15_000),
     isSystem: false,
   },
-]
+];
 
 export const mockGameSettings: GameSettings = {
   maxPlayers: 20,
@@ -280,4 +280,4 @@ export const mockGameSettings: GameSettings = {
   minWordLength: 3,
   roomCode: "BOMB-42X",
   isPublic: true,
-}
+};

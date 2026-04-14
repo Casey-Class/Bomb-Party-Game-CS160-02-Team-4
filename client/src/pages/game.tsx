@@ -1,25 +1,34 @@
-import { PlayerCircle } from "@/components/game/player-circle"
-import { BombPrompt } from "@/components/game/bomb-prompt"
-import { WordInput } from "@/components/game/word-input"
-import { GameSettingsPanel } from "@/components/game/game-settings"
-import { GameChat } from "@/components/game/game-chat"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Bomb, MessageSquare, Play, RotateCcw, Settings, Users } from "lucide-react"
-import { useGameSocket } from "@/lib/game-socket"
-import { getStoredPlayerId, getStoredPlayerName } from "@/lib/player-identity"
-import { useParams } from "react-router"
+import {
+  Bomb,
+  MessageSquare,
+  Play,
+  RotateCcw,
+  Settings,
+  Users,
+} from "lucide-react";
+import { useParams } from "react-router";
+import { BombPrompt } from "@/components/game/bomb-prompt";
+import { GameChat } from "@/components/game/game-chat";
+import { GameSettingsPanel } from "@/components/game/game-settings";
+import { PlayerCircle } from "@/components/game/player-circle";
+import { WordInput } from "@/components/game/word-input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGameSocket } from "@/lib/game-socket";
+import { getStoredPlayerId, getStoredPlayerName } from "@/lib/player-identity";
 
 function getActivePlayerAngle(playerCount: number, activePlayerIndex: number) {
-  if (activePlayerIndex < 0 || playerCount === 0) return 0
-  return (2 * Math.PI * activePlayerIndex) / playerCount - Math.PI / 2
+  if (activePlayerIndex < 0 || playerCount === 0) {
+    return 0;
+  }
+  return (2 * Math.PI * activePlayerIndex) / playerCount - Math.PI / 2;
 }
 
 export function GamePage() {
-  const { roomId = "" } = useParams()
-  const playerName = getStoredPlayerName()
-  const localPlayerId = getStoredPlayerId()
+  const { roomId = "" } = useParams();
+  const playerName = getStoredPlayerName();
+  const localPlayerId = getStoredPlayerId();
   const {
     players,
     gameState,
@@ -31,57 +40,63 @@ export function GamePage() {
     sendTypingWord,
     sendWord,
     sendChat,
-  } = useGameSocket(roomId.toUpperCase(), playerName)
-  const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId)
-  const localPlayer = players.find((p) => p.id === localPlayerId)
-  const winner = players.find((p) => p.id === gameState.winnerId)
-  const aliveCount = players.filter((p) => !p.isEliminated).length
-  const connectedCount = players.filter((p) => p.isConnected).length
-  const typedWord = localPlayer?.currentWord ?? ""
-  const canStart = players.length >= 2 && gameState.status !== "playing"
+  } = useGameSocket(roomId.toUpperCase(), playerName);
+  const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId);
+  const localPlayer = players.find((p) => p.id === localPlayerId);
+  const winner = players.find((p) => p.id === gameState.winnerId);
+  const aliveCount = players.filter((p) => !p.isEliminated).length;
+  const connectedCount = players.filter((p) => p.isConnected).length;
+  const typedWord = localPlayer?.currentWord ?? "";
+  const canStart = players.length >= 2 && gameState.status !== "playing";
 
-  const activePlayerIndex = players.findIndex((p) => p.id === gameState.currentPlayerId)
-  const activePlayerAngle = getActivePlayerAngle(players.length, activePlayerIndex)
+  const activePlayerIndex = players.findIndex(
+    (p) => p.id === gameState.currentPlayerId
+  );
+  const activePlayerAngle = getActivePlayerAngle(
+    players.length,
+    activePlayerIndex
+  );
   const isLocalPlayersTurn =
-    gameState.currentPlayerId === localPlayerId || gameState.currentPlayerId === clientId
+    gameState.currentPlayerId === localPlayerId ||
+    gameState.currentPlayerId === clientId;
 
   return (
-    <div className="flex h-svh w-full bg-zinc-900 overflow-hidden">
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-zinc-900/80">
+    <div className="flex h-svh w-full overflow-hidden bg-zinc-900">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center justify-between border-white/5 border-b bg-zinc-900/80 px-4 py-2">
           <div className="flex items-center gap-2">
             <Bomb className="h-5 w-5 text-amber-400" />
-            <span className="font-bold text-white text-sm">Bomb Party</span>
+            <span className="font-bold text-sm text-white">Bomb Party</span>
             <Badge
-              variant="secondary"
               className="bg-zinc-800 text-white/60 text-xs"
+              variant="secondary"
             >
               Room: {gameSettings.roomCode}
             </Badge>
             <Badge
-              variant="outline"
               className="border-emerald-400/30 text-emerald-300 text-xs capitalize"
+              variant="outline"
             >
               {connectionStatus}
             </Badge>
             {gameState.status === "waiting" && (
               <Badge
-                variant="outline"
                 className="border-sky-400/30 text-sky-300 text-xs"
+                variant="outline"
               >
                 Lobby
               </Badge>
             )}
             {gameState.status === "ended" && winner && (
               <Badge
-                variant="outline"
                 className="border-emerald-400/30 text-emerald-300 text-xs"
+                variant="outline"
               >
                 Winner: {winner.name}
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-white/50">
+          <div className="flex items-center gap-3 text-white/50 text-xs">
             <div className="flex items-center gap-1">
               <Users className="h-3.5 w-3.5" />
               <span>
@@ -90,17 +105,17 @@ export function GamePage() {
             </div>
             <div>{connectedCount} connected</div>
             <Badge
-              variant="outline"
               className="border-amber-400/30 text-amber-400 text-xs"
+              variant="outline"
             >
               Round {gameState.round}
             </Badge>
             <Button
+              className="h-7 gap-1 bg-zinc-800 text-white hover:bg-zinc-700"
+              disabled={!canStart}
+              onClick={startGame}
               size="sm"
               variant="secondary"
-              className="h-7 gap-1 bg-zinc-800 text-white hover:bg-zinc-700"
-              onClick={startGame}
-              disabled={!canStart}
             >
               {gameState.status === "ended" ? (
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -112,49 +127,55 @@ export function GamePage() {
           </div>
         </div>
 
-        <div className="flex-1 relative min-h-0">
-          <PlayerCircle players={players} currentSyllable={gameState.currentSyllable} />
-          <BombPrompt gameState={gameState} activePlayerAngle={activePlayerAngle} />
+        <div className="relative min-h-0 flex-1">
+          <PlayerCircle
+            currentSyllable={gameState.currentSyllable}
+            players={players}
+          />
+          <BombPrompt
+            activePlayerAngle={activePlayerAngle}
+            gameState={gameState}
+          />
         </div>
 
-        <div className="px-6 py-4 border-t border-white/5 bg-zinc-900/80">
+        <div className="border-white/5 border-t bg-zinc-900/80 px-6 py-4">
           <WordInput
             currentPlayer={currentPlayer}
             gameState={gameState}
-            typedWord={typedWord}
-            onTypedWordChange={sendTypingWord}
-            onSubmitWord={sendWord}
             isLocalPlayer={isLocalPlayersTurn}
+            onSubmitWord={sendWord}
+            onTypedWordChange={sendTypingWord}
+            typedWord={typedWord}
           />
         </div>
       </div>
 
-      <div className="w-80 border-l border-white/5 bg-zinc-900/50 flex flex-col shrink-0">
-        <Tabs defaultValue="chat" className="flex flex-col h-full">
-          <TabsList className="w-full rounded-none border-b border-white/5 bg-transparent h-10 px-2 shrink-0">
+      <div className="flex w-80 shrink-0 flex-col border-white/5 border-l bg-zinc-900/50">
+        <Tabs className="flex h-full flex-col" defaultValue="chat">
+          <TabsList className="h-10 w-full shrink-0 rounded-none border-white/5 border-b bg-transparent px-2">
             <TabsTrigger
+              className="flex-1 gap-1.5 rounded-md text-white/50 text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white"
               value="chat"
-              className="flex-1 gap-1.5 text-xs text-white/50 data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-md"
             >
               <MessageSquare className="h-3.5 w-3.5" />
               Chat
             </TabsTrigger>
             <TabsTrigger
+              className="flex-1 gap-1.5 rounded-md text-white/50 text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white"
               value="settings"
-              className="flex-1 gap-1.5 text-xs text-white/50 data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-md"
             >
               <Settings className="h-3.5 w-3.5" />
               Settings
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="chat" className="flex-1 m-0 min-h-0">
+          <TabsContent className="m-0 min-h-0 flex-1" value="chat">
             <GameChat messages={chatMessages} onSendMessage={sendChat} />
           </TabsContent>
-          <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
+          <TabsContent className="m-0 flex-1 overflow-auto" value="settings">
             <GameSettingsPanel settings={gameSettings} />
           </TabsContent>
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
