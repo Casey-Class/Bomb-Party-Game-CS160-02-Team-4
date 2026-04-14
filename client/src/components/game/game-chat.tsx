@@ -1,67 +1,64 @@
-import { useState, useRef, useEffect } from "react"
-import { type ChatMessage } from "@/data/mock-game"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send } from "lucide-react"
+import { Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ChatMessage } from "@/data/mock-game";
 
 interface GameChatProps {
-  messages: ChatMessage[]
-  onSendMessage?: (message: string) => void
+  messages: ChatMessage[];
+  onSendMessage?: (message: string) => void;
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 export function GameChat({ messages, onSendMessage }: GameChatProps) {
-  const [newMessage, setNewMessage] = useState("")
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const [newMessage, setNewMessage] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const getAuthorClassName = (isSystem: boolean, author: string) => {
+    if (isSystem) {
+      return "text-amber-400/80";
+    }
+
+    return author === "You" ? "text-amber-400" : "text-white/70";
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages])
+  });
 
   function handleSend(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newMessage.trim()) return
+    e.preventDefault();
+    if (!newMessage.trim()) {
+      return;
+    }
 
-    onSendMessage?.(newMessage.trim())
-    setNewMessage("")
+    onSendMessage?.(newMessage.trim());
+    setNewMessage("");
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ScrollArea
-        ref={scrollRef}
-        className="min-h-0 flex-1"
-      >
+      <ScrollArea className="min-h-0 flex-1" ref={scrollRef}>
         <div className="flex flex-col gap-1.5">
           <div className="p-3">
             {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className="text-sm"
-              >
-                <div className="flex gap-1.5 items-baseline">
-                  <span className="text-white/30 text-[10px] shrink-0">
+              <div className="text-sm" key={msg.id}>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="shrink-0 text-[10px] text-white/30">
                     {formatTime(msg.timestamp)}
                   </span>
                   <span
-                    className={`font-semibold text-xs shrink-0 ${
-                      msg.isSystem
-                        ? "text-amber-400/80"
-                        : msg.author === "You"
-                          ? "text-amber-400"
-                          : "text-white/70"
-                    }`}
+                    className={`shrink-0 font-semibold text-xs ${getAuthorClassName(msg.isSystem, msg.author)}`}
                   >
                     {msg.author}:
                   </span>
                   <span
-                    className={`text-xs break-all ${
+                    className={`break-all text-xs ${
                       msg.isSystem ? "text-white/70" : "text-white/80"
                     }`}
                   >
@@ -75,26 +72,26 @@ export function GameChat({ messages, onSendMessage }: GameChatProps) {
       </ScrollArea>
 
       <form
+        className="flex gap-1.5 border-white/10 border-t p-2"
         onSubmit={handleSend}
-        className="flex gap-1.5 border-t border-white/10 p-2"
       >
         <Input
+          autoComplete="off"
+          className="h-8 border-white/10 bg-zinc-800/80 text-white text-xs placeholder:text-white/30"
           id="chat-input"
-          value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          className="bg-zinc-800/80 border-white/10 text-white placeholder:text-white/30 text-xs h-8"
-          autoComplete="off"
+          value={newMessage}
         />
         <Button
-          type="submit"
-          size="icon"
+          className="h-8 w-8 shrink-0 bg-zinc-700 text-white hover:bg-zinc-600"
           disabled={!newMessage.trim()}
-          className="h-8 w-8 bg-zinc-700 hover:bg-zinc-600 text-white shrink-0"
+          size="icon"
+          type="submit"
         >
           <Send className="h-3 w-3" />
         </Button>
       </form>
     </div>
-  )
+  );
 }
