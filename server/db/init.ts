@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
+import { join } from "path";
 
-const dbPath = "./db/bomb-party.sqlite";
-
+const dbPath = join(import.meta.dir, "bomb-party.sqlite");
 export const db = new Database(dbPath, { create: true });
 
 const initStatements = [

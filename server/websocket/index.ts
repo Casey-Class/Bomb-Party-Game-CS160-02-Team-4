@@ -1,6 +1,10 @@
 import type { ServerWebSocket } from "bun";
 import { WebSocketGameService } from "./service";
 import type { ServerEvent, SocketData } from "./types";
+import "../db/init";
+import { getDictionarySize } from "../words/dictionary";
+
+console.log(`Loaded dictionary with ${getDictionarySize()} words`);
 
 const clientsByRoom = new Map<string, Set<ServerWebSocket<SocketData>>>();
 const roomServices = new Map<string, WebSocketGameService>();

@@ -5,10 +5,10 @@
   "private": true,
   "scripts": {
     "install:all": "bun install --cwd client && bun install --cwd server",
-    "db:init": "bun run server/init.ts",
-    "server": "bun --cwd server run index.ts",
+    "db:init": "bun run server/db/init.ts",
+    "server": "bun run server/websocket/index.ts",
     "client": "bun --cwd client run dev",
-    "dev": "bun x concurrently \"bun run server\" \"bun run client\""
+    "dev": "bun x concurrently --kill-others \"bun run server\" \"bun run client\""
   },
   "repository": {
     "type": "git",
