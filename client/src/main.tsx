@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router";
 import "./index.css";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/use-auth";
 import App from "./app.tsx";
 
 const rootElement = document.getElementById("root");
@@ -17,21 +18,23 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider>
-        <TooltipProvider>
-          <App />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: "#27272a",
-                color: "#fafafa",
-                border: "1px solid rgba(255,255,255,0.08)",
-              },
-            }}
-          />
-        </TooltipProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <App />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: "#27272a",
+                  color: "#fafafa",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                },
+              }}
+            />
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>
 );

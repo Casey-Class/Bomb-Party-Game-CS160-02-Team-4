@@ -1,6 +1,7 @@
 import "./db/init";
 import { healthEndpoint } from "./endpoints/health";
 import { rootEndpoint } from "./endpoints/root";
+import { registerEndpoint, loginEndpoint, validateEndpoint } from "./endpoints/auth";
 import { getDictionarySize } from "./words/dictionary";
 import { handleWebSocketUpgrade, websocket } from "./websocket";
 
@@ -9,6 +10,9 @@ const server = Bun.serve({
   routes: {
     "/": rootEndpoint,
     "/health": healthEndpoint,
+    "/api/auth/register": registerEndpoint,
+    "/api/auth/login": loginEndpoint,
+    "/api/auth/validate": validateEndpoint,
   },
   fetch(req, server) {
     const url = new URL(req.url);
