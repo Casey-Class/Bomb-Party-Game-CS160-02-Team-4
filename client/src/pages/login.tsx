@@ -34,7 +34,7 @@ export function LoginPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         toast.success("Login successful!");
-        navigate("/");
+        navigate("/game/lobby");
       } else {
         toast.error(data.message || "Login failed");
       }
@@ -74,7 +74,7 @@ export function LoginPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         toast.success("Registration successful!");
-        navigate("/");
+        navigate("/game/lobby");
       } else {
         toast.error(data.message || "Registration failed");
       }
@@ -94,7 +94,7 @@ export function LoginPage() {
     localStorage.setItem("guest", "true");
     localStorage.setItem("user", JSON.stringify(guestUser));
     toast.success("Playing as guest!");
-    navigate("/");
+    navigate("/game/lobby");
   };
 
   return (

@@ -5,14 +5,39 @@ import { registerEndpoint, loginEndpoint, validateEndpoint } from "./endpoints/a
 import { getDictionarySize } from "./words/dictionary";
 import { handleWebSocketUpgrade, websocket } from "./websocket";
 
+// CORS wrapper for endpoints
+function withCors(handler: (req: Request) => Response | Promise<Response>) {
+  return async (req: Request): Promise<Response> => {
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+
+    // Handle preflight requests
+    if (req.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    const response = await handler(req);
+    
+    // Add CORS headers to the response
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
+  };
+}
+
 const server = Bun.serve({
   port: 5555,
   routes: {
-    "/": rootEndpoint,
-    "/health": healthEndpoint,
-    "/api/auth/register": registerEndpoint,
-    "/api/auth/login": loginEndpoint,
-    "/api/auth/validate": validateEndpoint,
+    "/": withCors(rootEndpoint),
+    "/health": withCors(healthEndpoint),
+    "/api/auth/register": withCors(registerEndpoint),
+    "/api/auth/login": withCors(loginEndpoint),
+    "/api/auth/validate": withCors(validateEndpoint),
   },
   fetch(req, server) {
     const url = new URL(req.url);

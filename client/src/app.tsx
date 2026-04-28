@@ -2,6 +2,7 @@ import { Route, Routes, Navigate } from "react-router";
 import { GamePage } from "@/pages/game";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
+import { LobbyPage } from "@/pages/lobby";
 import { useAuth } from "@/hooks/use-auth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,14 @@ export function App() {
           </ProtectedRoute>
         } 
         path="/home" 
+      />
+      <Route 
+        element={
+          <ProtectedRoute>
+            <LobbyPage />
+          </ProtectedRoute>
+        } 
+        path="/game/lobby" 
       />
       <Route 
         element={

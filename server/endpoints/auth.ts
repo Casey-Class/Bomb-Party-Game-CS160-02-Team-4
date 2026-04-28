@@ -23,9 +23,9 @@ export interface AuthResponse {
 
 export async function registerHandler(req: Request): Promise<Response> {
   try {
-    const body = await req.json() as RegisterRequest;
+    const body = await req.json().catch(() => null) as RegisterRequest | null;
     
-    if (!body.username || !body.password) {
+    if (!body || !body.username || !body.password) {
       return Response.json({
         success: false,
         message: 'Username and password are required'
@@ -88,9 +88,9 @@ export async function registerHandler(req: Request): Promise<Response> {
 
 export async function loginHandler(req: Request): Promise<Response> {
   try {
-    const body = await req.json() as LoginRequest;
+    const body = await req.json().catch(() => null) as LoginRequest | null;
     
-    if (!body.username || !body.password) {
+    if (!body || !body.username || !body.password) {
       return Response.json({
         success: false,
         message: 'Username and password are required'
