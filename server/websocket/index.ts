@@ -183,17 +183,3 @@ export const websocket = {
   },
 };
 
-const server = Bun.serve<SocketData>({
-  port: 5555,
-  fetch(req, server) {
-    // Attempt to upgrade the connection to a WebSocket
-    if (handleWebSocketUpgrade(req, server)) {
-      return; // Upgrade handled
-    }
-
-    return new Response("Upgrade failed", { status: 400 });
-  },
-  websocket, // This links to the websocket object you already have
-});
-
-console.log(`Server started on http://localhost:${server.port}`);

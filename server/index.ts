@@ -51,7 +51,7 @@ const server = Bun.serve({
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
 
-    return new Response("Not Found", { status: 404 });
+    return undefined;
   },
   websocket,
   error(error) {
