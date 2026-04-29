@@ -13,7 +13,7 @@ function generateRoomId() {
 
 export function LobbyPage() {
   const navigate = useNavigate();
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, logout } = useAuth();
   const [roomCode, setRoomCode] = useState("");
 
   function joinRoom(roomId: string) {
@@ -43,7 +43,25 @@ export function LobbyPage() {
           <p className="text-white/50">
             {isGuest ? `Playing as ${user?.username}` : `Welcome, ${user?.username}!`}
           </p>
+          {!isGuest && (
+              <Button
+                  variant="outline"
+                  onClick={() => navigate("/profile")}
+                  className="text-amber-400 hover:text-amber-300 p-0 h-auto"
+              >
+                View My Profile & Stats
+              </Button>
+          )}
+          <Button
+              variant="outline"
+              className="text-zinc-400"
+              onClick={logout}
+          >
+            Logout
+          </Button>
         </div>
+
+
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Join Room */}
@@ -65,7 +83,7 @@ export function LobbyPage() {
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                 maxLength={6}
               />
-              <Button 
+              <Button
                 onClick={() => joinRoom(roomCode)}
                 disabled={roomCode.length !== 6}
                 className="w-full bg-zinc-700 hover:bg-zinc-600 text-white"
@@ -91,7 +109,7 @@ export function LobbyPage() {
                 <p className="text-zinc-300 text-sm mb-2">Create a new room with a unique code</p>
                 <p className="text-amber-400 font-mono text-lg">XXXXXX</p>
               </div>
-              <Button 
+              <Button
                 onClick={createRoom}
                 className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold"
               >
@@ -102,8 +120,8 @@ export function LobbyPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate("/login")}
             className="border-zinc-600 text-zinc-400 hover:bg-zinc-800"
           >

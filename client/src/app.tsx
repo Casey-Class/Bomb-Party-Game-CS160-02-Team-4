@@ -3,6 +3,7 @@ import { GamePage } from "@/pages/game";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { LobbyPage } from "@/pages/lobby";
+import { ProfilePage } from "@/pages/profile.tsx";
 import { useAuth } from "@/hooks/use-auth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,13 +33,21 @@ export function App() {
         } 
         path="/home" 
       />
+        <Route
+            element={
+                <ProtectedRoute>
+                    <ProfilePage />
+                </ProtectedRoute>
+            }
+            path="/profile"
+        />
       <Route 
         element={
           <ProtectedRoute>
             <LobbyPage />
           </ProtectedRoute>
         } 
-        path="/game/lobby" 
+        path="/lobby"
       />
       <Route 
         element={
