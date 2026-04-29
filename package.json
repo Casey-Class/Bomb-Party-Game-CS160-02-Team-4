@@ -1,0 +1,20 @@
+{
+  "name": "bomb-party-game-cs160-02-team-4",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "install:all": "bun install --cwd client && bun install --cwd server",
+    "db:init": "bun run server/db/init.ts",
+    "server": "bun run server/websocket/index.ts",
+    "client": "bun --cwd client run dev",
+    "dev": "bun x concurrently --kill-others \"bun run server\" \"bun run client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Casey-Class/Bomb-Party-Game-CS160-02-Team-4"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

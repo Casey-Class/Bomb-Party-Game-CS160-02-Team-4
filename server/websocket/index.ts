@@ -1,6 +1,10 @@
 import type { ServerWebSocket } from "bun";
 import { WebSocketGameService } from "./service";
 import type { ServerEvent, SocketData } from "./types";
+import "../db/init";
+import { getDictionarySize } from "../words/dictionary";
+
+console.log(`Loaded dictionary with ${getDictionarySize()} words`);
 
 const clientsByRoom = new Map<string, Set<ServerWebSocket<SocketData>>>();
 const roomServices = new Map<string, WebSocketGameService>();
@@ -178,3 +182,18 @@ export const websocket = {
     cleanupRoom(roomId);
   },
 };
+
+const server = Bun.serve<SocketData>({
+  port: 5555,
+  fetch(req, server) {
+    // Attempt to upgrade the connection to a WebSocket
+    if (handleWebSocketUpgrade(req, server)) {
+      return; // Upgrade handled
+    }
+
+    return new Response("Upgrade failed", { status: 400 });
+  },
+  websocket, // This links to the websocket object you already have
+});
+
+console.log(`Server started on http://localhost:${server.port}`);
