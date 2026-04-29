@@ -59,15 +59,25 @@ export function HomePage() {
                   {isGuest ? "Guest" : "Logged in"}: {user.username}
                 </span>
                 {!isGuest && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={logout}
-                    className="h-6 px-2 text-xs text-white/40 hover:text-white/60 hover:bg-white/5"
-                  >
-                    <LogOut className="h-3 w-3 mr-1" />
-                    Logout
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate("/profile")}
+                      className="h-6 px-2 text-xs text-white/40 hover:text-white/60 hover:bg-white/5"
+                    >
+                      Profile
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={logout}
+                      className="h-6 px-2 text-xs text-white/40 hover:text-white/60 hover:bg-white/5"
+                    >
+                      <LogOut className="h-3 w-3 mr-1" />
+                      Logout
+                    </Button>
+                  </>
                 )}
               </div>
             )}
