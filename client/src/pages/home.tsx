@@ -1,9 +1,10 @@
-import { Bomb, Users } from "lucide-react";
+import { Bomb, Users, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getStoredPlayerName, storePlayerName } from "@/lib/player-identity";
+import { useAuth } from "@/hooks/use-auth";
 
 function generateRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -11,12 +12,17 @@ function generateRoomId() {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { user, logout, isGuest } = useAuth();
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
 
   useEffect(() => {
-    setPlayerName(getStoredPlayerName());
-  }, []);
+    if (user) {
+      setPlayerName(user.username);
+    } else {
+      setPlayerName(getStoredPlayerName());
+    }
+  }, [user]);
 
   function goToRoom(nextRoomCode: string) {
     const normalizedRoomCode = nextRoomCode.trim().toUpperCase();
@@ -41,10 +47,30 @@ export function HomePage() {
           </p>
         </div>
 
-        <div className="flex gap-6 text-white/40 text-xs">
-          <div className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            <span>Up to 20 players</span>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4 text-white/40 text-xs">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              <span>Up to 20 players</span>
+            </div>
+            {user && (
+              <div className="flex items-center gap-2">
+                <span className="text-white/60">
+                  {isGuest ? "Guest" : "Logged in"}: {user.username}
+                </span>
+                {!isGuest && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={logout}
+                    className="h-6 px-2 text-xs text-white/40 hover:text-white/60 hover:bg-white/5"
+                  >
+                    <LogOut className="h-3 w-3 mr-1" />
+                    Logout
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
