@@ -17,6 +17,8 @@ export function HomePage() {
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const loggedInUsername = isAuthenticated && user ? user.username : null;
+  const normalizedRoomCode = roomCode.trim().toUpperCase();
+  const canJoinRoom = normalizedRoomCode.length === 6;
 
   useEffect(() => {
     if (user) {
@@ -80,24 +82,35 @@ export function HomePage() {
             />
           )}
 
-          <div className="flex gap-2">
+          <form
+            className="flex gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+
+              if (!canJoinRoom) {
+                return;
+              }
+
+              goToRoom(normalizedRoomCode);
+            }}
+          >
             <Input
               className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
+              maxLength={6}
               onChange={(event) =>
-                setRoomCode(event.target.value.toUpperCase())
+                setRoomCode(event.target.value.replace(/\s+/g, "").toUpperCase())
               }
               placeholder="Room code"
               value={roomCode}
             />
             <Button
-              className="bg-zinc-800 px-5 py-6 font-bold text-white hover:bg-zinc-700"
-              disabled={!roomCode.trim()}
-              onClick={() => goToRoom(roomCode)}
-              size="lg"
+              className="h-11 bg-zinc-800 px-5 font-bold text-white hover:bg-zinc-700"
+              disabled={!canJoinRoom}
+              type="submit"
             >
               Join
             </Button>
-          </div>
+          </form>
 
           <div className="relative flex items-center justify-center py-1">
             <div className="absolute inset-x-0 h-px bg-white/10" />
