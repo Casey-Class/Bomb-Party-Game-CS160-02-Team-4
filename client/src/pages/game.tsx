@@ -61,9 +61,10 @@ export function GamePage() {
   const localPlayer = players.find((p) => p.id === localPlayerId);
   const winner = players.find((p) => p.id === gameState.winnerId);
   const aliveCount = players.filter((p) => !p.isEliminated).length;
+  const connectedPlayerCount = players.filter((p) => p.isConnected).length;
   const connectionStatusColor = getConnectionStatusColor(connectionStatus);
   const typedWord = localPlayer?.currentWord ?? "";
-  const canStart = players.length >= 2 && gameState.status !== "playing";
+  const canStart = connectedPlayerCount >= 2 && gameState.status !== "playing";
 
   const activePlayerIndex = players.findIndex(
     (p) => p.id === gameState.currentPlayerId

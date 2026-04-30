@@ -240,16 +240,16 @@ export class WebSocketGameService {
       };
     }
 
-    const alivePlayers = this.snapshot.players.filter((candidate) => !candidate.isEliminated);
+    const connectedPlayers = this.snapshot.players.filter((candidate) => candidate.isConnected);
 
-    if (alivePlayers.length < 2) {
+    if (connectedPlayers.length < 2) {
       return {
         type: "error",
         payload: { message: "Need at least 2 players to start" },
       };
     }
 
-    const startingPlayer = alivePlayers[0];
+    const startingPlayer = connectedPlayers[0];
 
     if (!startingPlayer) {
       return {
