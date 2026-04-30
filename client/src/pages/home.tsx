@@ -114,14 +114,6 @@ export function HomePage() {
             Create Room
           </Button>
         </div>
-
-        <p className="text-white/45 text-xs">
-          Press{" "}
-          <kbd className="rounded border border-white/10 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-white/40">
-            d
-          </kbd>{" "}
-          to toggle dark mode
-        </p>
       </div>
     </main>
   );
