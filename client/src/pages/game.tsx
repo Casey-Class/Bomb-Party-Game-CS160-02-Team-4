@@ -61,7 +61,7 @@ export function GamePage() {
     gameState.currentPlayerId === clientId;
 
   return (
-    <div className="flex min-h-[calc(100svh-74px)] overflow-hidden bg-zinc-900">
+    <div className="flex h-[calc(100svh-74px)] min-h-0 overflow-hidden bg-zinc-900">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-white/5 border-b bg-zinc-900/80 px-4 py-2">
           <div className="flex items-center gap-2">
@@ -150,8 +150,8 @@ export function GamePage() {
         </div>
       </div>
 
-      <div className="flex w-80 shrink-0 flex-col border-white/5 border-l bg-zinc-900/50">
-        <Tabs className="flex h-full flex-col" defaultValue="chat">
+      <div className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-white/5 border-l bg-zinc-900/50">
+        <Tabs className="flex h-full min-h-0 flex-col overflow-hidden" defaultValue="chat">
           <TabsList className="h-10 w-full shrink-0 rounded-none border-white/5 border-b bg-transparent px-2">
             <TabsTrigger
               className="flex-1 gap-1.5 rounded-md text-white/50 text-xs data-[state=active]:bg-zinc-800 data-[state=active]:text-white"
@@ -168,10 +168,10 @@ export function GamePage() {
               Settings
             </TabsTrigger>
           </TabsList>
-          <TabsContent className="m-0 min-h-0 flex-1" value="chat">
+          <TabsContent className="m-0 min-h-0 flex-1 overflow-hidden" value="chat">
             <GameChat messages={chatMessages} onSendMessage={sendChat} />
           </TabsContent>
-          <TabsContent className="m-0 flex-1 overflow-auto" value="settings">
+          <TabsContent className="m-0 min-h-0 flex-1 overflow-auto" value="settings">
             <GameSettingsPanel settings={gameSettings} />
           </TabsContent>
         </Tabs>

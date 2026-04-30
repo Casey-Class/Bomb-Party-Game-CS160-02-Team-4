@@ -43,7 +43,7 @@ export function GameChat({ messages, onSendMessage }: GameChatProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ScrollArea className="min-h-0 flex-1" ref={scrollRef}>
+      <ScrollArea className="min-h-0 flex-1 overflow-hidden" ref={scrollRef}>
         <div className="flex flex-col gap-1.5">
           <div className="p-3">
             {messages.map((msg) => (
