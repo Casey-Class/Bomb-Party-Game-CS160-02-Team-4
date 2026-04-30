@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,37 +6,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ username: "", password: "", confirmPassword: "" });
   const navigate = useNavigate();
+  const { isAuthenticated, isGuest, isLoading: isAuthLoading, login, register, loginAsGuest } = useAuth();
 
-  const API_BASE_URL = "http://localhost:5555/api/auth";
+  useEffect(() => {
+    if (!isAuthLoading && (isAuthenticated || isGuest)) {
+      navigate("/lobby", { replace: true });
+    }
+  }, [isAuthLoading, isAuthenticated, isGuest, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(loginForm),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Login successful!");
-        navigate("/game/lobby");
+      const success = await login(loginForm.username, loginForm.password);
+      if (success) {
+        navigate("/lobby");
       } else {
-        toast.error(data.message || "Login failed");
+        setIsLoading(false);
       }
     } catch (error) {
       toast.error("Network error. Please try again.");
@@ -57,26 +51,11 @@ export function LoginPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: registerForm.username,
-          password: registerForm.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Registration successful!");
-        navigate("/game/lobby");
+      const success = await register(registerForm.username, registerForm.password);
+      if (success) {
+        navigate("/lobby");
       } else {
-        toast.error(data.message || "Registration failed");
+        setIsLoading(false);
       }
     } catch (error) {
       toast.error("Network error. Please try again.");
@@ -87,14 +66,8 @@ export function LoginPage() {
   };
 
   const handleGuestPlay = () => {
-    const guestUser = {
-      id: 0,
-      username: `Guest_${Math.random().toString(36).substr(2, 9)}`,
-    };
-    localStorage.setItem("guest", "true");
-    localStorage.setItem("user", JSON.stringify(guestUser));
-    toast.success("Playing as guest!");
-    navigate("/game/lobby");
+    loginAsGuest();
+    navigate("/lobby");
   };
 
   return (
