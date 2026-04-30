@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loginAsGuest: () => void;
+  getProfileData: (username: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +37,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem("user");
     const storedGuest = localStorage.getItem("guest");
 
+    if (storedToken && storedUser) {
+      try {
+        setToken(storedToken);
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsGuest(false);
+        localStorage.removeItem("guest");
+        validateToken(storedToken);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+
     if (storedGuest === "true" && storedUser) {
       try {
         const guestUser = JSON.parse(storedUser);
@@ -46,20 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("Error parsing guest user:", error);
         localStorage.removeItem("guest");
-        localStorage.removeItem("user");
-      }
-    }
-
-    if (storedToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setToken(storedToken);
-        
-        validateToken(storedToken);
-      } catch (error) {
-        console.error("Error parsing stored user:", error);
-        localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
     }
@@ -175,6 +177,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate("/login");
   };
 
+  const getProfileData = async (username: string) => {
+    const response = await fetch(`http://localhost:5555/api/auth/profile?username=${username}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.json();
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -185,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     loginAsGuest,
+    getProfileData
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);
@@ -197,3 +210,4 @@ export function useAuth() {
   }
   return context;
 }
+
