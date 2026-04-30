@@ -48,6 +48,7 @@ function withCors(handler: (req: Request) => Response | Promise<Response>) {
 
 const server = Bun.serve({
   port: 5555,
+  hostname: "0.0.0.0",
   routes: {
     "/": withCors(rootEndpoint),
     "/health": withCors(healthEndpoint),

@@ -77,7 +77,7 @@ function getSocketUrl(roomId: string, playerName: string, playerId: string) {
     playerId,
   });
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = import.meta.env.DEV ? "localhost:5555" : window.location.host;
+  const host = window.location.host;
   return `${protocol}//${host}/ws?${query.toString()}`;
 }
 

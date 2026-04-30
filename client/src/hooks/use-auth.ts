@@ -39,7 +39,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = "http://localhost:5555/api/auth";
+const API_BASE_URL = "/api/auth";
 const DEFAULT_AVATAR_COLOR = "#a855f7";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -221,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string
   ): Promise<ProfileDataResponse> => {
     const response = await fetch(
-      `http://localhost:5555/api/auth/profile?username=${username}`,
+      `/api/auth/profile?username=${username}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
