@@ -1,1 +1,5 @@
-export { HomePage as LobbyPage } from "@/pages/home";
+import { HomePage } from "@/pages/home";
+
+export function LobbyPage() {
+  return <HomePage />;
+}

@@ -1,21 +1,40 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "react-hot-toast";
 import { useAuth } from "@/hooks/use-auth";
 
 export function LoginPage() {
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({ username: "", password: "", confirmPassword: "" });
+  const [registerForm, setRegisterForm] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
   const navigate = useNavigate();
-  const { isAuthenticated, isGuest, isLoading: isAuthLoading, login, register, loginAsGuest } = useAuth();
-  const activeTab = searchParams.get("mode") === "register" ? "register" : "login";
+  const {
+    isAuthenticated,
+    isGuest,
+    isLoading: isAuthLoading,
+    login,
+    register,
+    loginAsGuest,
+  } = useAuth();
+  const activeTab =
+    searchParams.get("mode") === "register" ? "register" : "login";
 
   const handleTabChange = (nextTab: string) => {
     navigate(`/login?mode=${nextTab}`, { replace: true });
@@ -57,7 +76,10 @@ export function LoginPage() {
     }
 
     try {
-      const success = await register(registerForm.username, registerForm.password);
+      const success = await register(
+        registerForm.username,
+        registerForm.password
+      );
       if (success) {
         navigate("/");
       } else {
@@ -80,90 +102,117 @@ export function LoginPage() {
     <main className="flex min-h-[calc(100svh-74px)] items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Bomb Party</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <CardTitle className="font-bold text-2xl">Bomb Party</CardTitle>
+          <CardDescription>
+            Sign in to your account or create a new one
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            className="w-full"
+            onValueChange={handleTabChange}
+            value={activeTab}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="register">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form className="space-y-4" onSubmit={handleLogin}>
                 <div className="space-y-2">
                   <Label htmlFor="login-username">Username</Label>
                   <Input
-                    id="login-username"
-                    type="text"
-                    placeholder="Enter your username"
-                    value={loginForm.username}
-                    onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                    required
                     disabled={isLoading}
+                    id="login-username"
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, username: e.target.value })
+                    }
+                    placeholder="Enter your username"
+                    required
+                    type="text"
+                    value={loginForm.username}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Password</Label>
                   <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                    required
                     disabled={isLoading}
+                    id="login-password"
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, password: e.target.value })
+                    }
+                    placeholder="Enter your password"
+                    required
+                    type="password"
+                    value={loginForm.password}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button className="w-full" disabled={isLoading} type="submit">
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
+              <form className="space-y-4" onSubmit={handleRegister}>
                 <div className="space-y-2">
                   <Label htmlFor="register-username">Username</Label>
                   <Input
-                    id="register-username"
-                    type="text"
-                    placeholder="Choose a username"
-                    value={registerForm.username}
-                    onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
-                    required
                     disabled={isLoading}
+                    id="register-username"
                     minLength={3}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        username: e.target.value,
+                      })
+                    }
+                    placeholder="Choose a username"
+                    required
+                    type="text"
+                    value={registerForm.username}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-password">Password</Label>
                   <Input
-                    id="register-password"
-                    type="password"
-                    placeholder="Choose a password"
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                    required
                     disabled={isLoading}
+                    id="register-password"
                     minLength={6}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        password: e.target.value,
+                      })
+                    }
+                    placeholder="Choose a password"
+                    required
+                    type="password"
+                    value={registerForm.password}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="register-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="register-confirm-password">
+                    Confirm Password
+                  </Label>
                   <Input
-                    id="register-confirm-password"
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={registerForm.confirmPassword}
-                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                    required
                     disabled={isLoading}
+                    id="register-confirm-password"
                     minLength={6}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                    placeholder="Confirm your password"
+                    required
+                    type="password"
+                    value={registerForm.confirmPassword}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button className="w-full" disabled={isLoading} type="submit">
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
@@ -171,11 +220,11 @@ export function LoginPage() {
           </Tabs>
         </CardContent>
         <CardFooter>
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleGuestPlay}
+          <Button
+            className="w-full"
             disabled={isLoading}
+            onClick={handleGuestPlay}
+            variant="outline"
           >
             Play as Guest
           </Button>

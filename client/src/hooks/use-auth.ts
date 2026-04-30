@@ -1,26 +1,40 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router";
+import { generateGuestName } from "@/lib/player-identity";
 
 export interface User {
+  avatarColor: string;
   id: number;
   username: string;
-  avatarColor: string;
+}
+
+interface ProfileDataResponse {
+  recentGames?: unknown[];
+  stats?: unknown;
+  success?: boolean;
+  user?: User;
 }
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
+  getProfileData: (username: string) => Promise<ProfileDataResponse>;
   isAuthenticated: boolean;
   isGuest: boolean;
+  isLoading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
-  register: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
   loginAsGuest: (username?: string) => void;
-  getProfileData: (username: string) => Promise<any>;
+  logout: () => void;
+  register: (username: string, password: string) => Promise<boolean>;
+  token: string | null;
   updateAvatarColor: (avatarColor: string) => Promise<boolean>;
+  user: User | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +49,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isGuest, setIsGuest] = useState(false);
   const navigate = useNavigate();
 
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    setIsGuest(false);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("guest");
+    toast.success("Logged out successfully!");
+    navigate("/login");
+  }, [navigate]);
+
+  const validateToken = useCallback(
+    async (tokenToValidate: string) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/validate`, {
+          headers: {
+            Authorization: `Bearer ${tokenToValidate}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          logout();
+          toast.error("Session expired. Please log in again.");
+          return;
+        }
+
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+      } catch (error) {
+        console.error("Token validation error:", error);
+      }
+    },
+    [logout]
+  );
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -46,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedUser = JSON.parse(storedUser) as Partial<User>;
         setUser({
           id: parsedUser.id ?? 0,
-          username: parsedUser.username ?? "Guest",
+          username: parsedUser.username ?? generateGuestName(),
           avatarColor: parsedUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
         });
         setIsGuest(false);
@@ -64,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const guestUser = JSON.parse(storedUser) as Partial<User>;
         setUser({
           id: guestUser.id ?? 0,
-          username: guestUser.username ?? "Guest",
+          username: guestUser.username ?? generateGuestName(),
           avatarColor: guestUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
         });
         setIsGuest(true);
@@ -76,36 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("user");
       }
     }
-    
+
     setIsLoading(false);
-  }, []);
+  }, [validateToken]);
 
-  const validateToken = async (tokenToValidate: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/validate`, {
-        headers: {
-          Authorization: `Bearer ${tokenToValidate}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        logout();
-        toast.error("Session expired. Please log in again.");
-        return;
-      }
-
-      if (data.user) {
-        setUser(data.user);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-    } catch (error) {
-      console.error("Token validation error:", error);
-    }
-  };
-
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
@@ -126,10 +157,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("guest");
         toast.success("Login successful!");
         return true;
-      } else {
-        toast.error(data.message || "Login failed");
-        return false;
       }
+      toast.error(data.message || "Login failed");
+      return false;
     } catch (error) {
       toast.error("Network error. Please try again.");
       console.error("Login error:", error);
@@ -137,7 +167,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (username: string, password: string): Promise<boolean> => {
+  const register = async (
+    username: string,
+    password: string
+  ): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: "POST",
@@ -158,10 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("guest");
         toast.success("Registration successful!");
         return true;
-      } else {
-        toast.error(data.message || "Registration failed");
-        return false;
       }
+      toast.error(data.message || "Registration failed");
+      return false;
     } catch (error) {
       toast.error("Network error. Please try again.");
       console.error("Registration error:", error);
@@ -173,9 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalizedUsername = username?.trim();
     const guestUser = {
       id: 0,
-      username:
-        normalizedUsername ||
-        `Guest_${Math.random().toString(36).slice(2, 11)}`,
+      username: normalizedUsername || generateGuestName(),
       avatarColor: DEFAULT_AVATAR_COLOR,
     };
     setUser(guestUser);
@@ -187,24 +217,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.success("Playing as guest!");
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    setIsGuest(false);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("guest");
-    toast.success("Logged out successfully!");
-    navigate("/login");
-  };
-
-  const getProfileData = async (username: string) => {
-    const response = await fetch(`http://localhost:5555/api/auth/profile?username=${username}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+  const getProfileData = async (
+    username: string
+  ): Promise<ProfileDataResponse> => {
+    const response = await fetch(
+      `http://localhost:5555/api/auth/profile?username=${username}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
-    });
+    );
     return response.json();
   };
 
@@ -232,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
-      if (!data.success || !data.user) {
+      if (!(data.success && data.user)) {
         toast.error(data.message || "Failed to update avatar color");
         return false;
       }
@@ -258,7 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     loginAsGuest,
     getProfileData,
-    updateAvatarColor
+    updateAvatarColor,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);
@@ -271,4 +295,3 @@ export function useAuth() {
   }
   return context;
 }
-

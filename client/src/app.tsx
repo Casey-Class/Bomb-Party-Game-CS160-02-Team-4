@@ -1,22 +1,26 @@
-import { Route, Routes, Navigate } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { Navbar } from "@/components/navbar";
+import { useAuth } from "@/hooks/use-auth";
 import { GamePage } from "@/pages/game";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { ProfilePage } from "@/pages/profile.tsx";
-import { useAuth } from "@/hooks/use-auth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isGuest, isLoading } = useAuth();
-  
+
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
   }
-  
-  if (!isAuthenticated && !isGuest) {
-    return <Navigate to="/login" replace />;
+
+  if (!(isAuthenticated || isGuest)) {
+    return <Navigate replace to="/login" />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -27,8 +31,8 @@ export function App() {
       <Routes>
         <Route element={<LoginPage />} path="/login" />
         <Route element={<HomePage />} path="/" />
-        <Route element={<Navigate to="/" replace />} path="/home" />
-        <Route element={<Navigate to="/" replace />} path="/lobby" />
+        <Route element={<Navigate replace to="/" />} path="/home" />
+        <Route element={<Navigate replace to="/" />} path="/lobby" />
         <Route
           element={
             <ProtectedRoute>

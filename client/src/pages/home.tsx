@@ -1,7 +1,7 @@
 import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +16,7 @@ export function HomePage() {
   const { user, isGuest, isAuthenticated, loginAsGuest } = useAuth();
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const loggedInUsername = isAuthenticated && user ? user.username : null;
 
   useEffect(() => {
     if (user) {
@@ -26,7 +27,7 @@ export function HomePage() {
   }, [user]);
 
   function ensurePlayerIdentity() {
-    const normalizedPlayerName = playerName.trim();
+    const normalizedPlayerName = loggedInUsername?.trim() ?? playerName.trim();
 
     if (!normalizedPlayerName) {
       toast.error("Enter a name first");
@@ -35,7 +36,7 @@ export function HomePage() {
 
     storePlayerName(normalizedPlayerName);
 
-    if (!isAuthenticated && !isGuest) {
+    if (!(isAuthenticated || isGuest)) {
       loginAsGuest(normalizedPlayerName);
     }
 
@@ -59,23 +60,25 @@ export function HomePage() {
   return (
     <main className="flex min-h-[calc(100svh-74px)] items-center justify-center p-6">
       <div className="flex max-w-md flex-col items-center gap-8 text-center">
-        <p className="max-w-sm text-sm leading-relaxed text-white/50">
+        <p className="max-w-sm text-sm text-white/70 leading-relaxed">
           Type words containing the given syllable before the bomb explodes!
           Last player standing wins.
         </p>
 
-        <div className="flex items-center gap-1.5 text-xs text-white/40">
+        <div className="flex items-center gap-1.5 text-white/60 text-xs">
           <Users className="h-4 w-4" />
           <span>Up to 20 players</span>
         </div>
 
         <div className="flex w-full flex-col gap-3">
-          <Input
-            className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
-            onChange={(event) => setPlayerName(event.target.value)}
-            placeholder="Your name"
-            value={playerName}
-          />
+          {loggedInUsername ? null : (
+            <Input
+              className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
+              onChange={(event) => setPlayerName(event.target.value)}
+              placeholder="Your name"
+              value={playerName}
+            />
+          )}
 
           <div className="flex gap-2">
             <Input
@@ -96,8 +99,15 @@ export function HomePage() {
             </Button>
           </div>
 
+          <div className="relative flex items-center justify-center py-1">
+            <div className="absolute inset-x-0 h-px bg-white/10" />
+            <span className="relative px-3 font-semibold text-white/75 text-xs uppercase tracking-[0.2em]">
+              or
+            </span>
+          </div>
+
           <Button
-            className="bg-amber-500 px-8 py-6 text-base font-bold text-black shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:bg-amber-400 hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+            className="bg-amber-500 px-8 py-6 font-bold text-base text-black shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:bg-amber-400 hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]"
             onClick={() => goToRoom(generateRoomId())}
             size="lg"
           >
@@ -105,7 +115,7 @@ export function HomePage() {
           </Button>
         </div>
 
-        <p className="text-xs text-white/20">
+        <p className="text-white/45 text-xs">
           Press{" "}
           <kbd className="rounded border border-white/10 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-white/40">
             d

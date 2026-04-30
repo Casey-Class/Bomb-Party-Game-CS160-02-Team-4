@@ -1,12 +1,31 @@
 export const PLAYER_NAME_STORAGE_KEY = "bomb-party-player-name";
 export const PLAYER_ID_STORAGE_KEY = "bomb-party-player-id";
+const LEGACY_GUEST_NAMES = new Set(["Guest", "Player"]);
+
+function generateGuestSuffix() {
+  return Math.random().toString(36).slice(2, 8);
+}
+
+export function generateGuestName() {
+  return `Guest_${generateGuestSuffix()}`;
+}
 
 export function getStoredPlayerName() {
   if (typeof window === "undefined") {
-    return "Player";
+    return generateGuestName();
   }
 
-  return localStorage.getItem(PLAYER_NAME_STORAGE_KEY)?.trim() || "Player";
+  const storedPlayerName = localStorage
+    .getItem(PLAYER_NAME_STORAGE_KEY)
+    ?.trim();
+
+  if (storedPlayerName && !LEGACY_GUEST_NAMES.has(storedPlayerName)) {
+    return storedPlayerName;
+  }
+
+  const generatedGuestName = generateGuestName();
+  localStorage.setItem(PLAYER_NAME_STORAGE_KEY, generatedGuestName);
+  return generatedGuestName;
 }
 
 export function storePlayerName(playerName: string) {
@@ -14,7 +33,11 @@ export function storePlayerName(playerName: string) {
     return;
   }
 
-  const normalizedName = playerName.trim() || "Player";
+  const trimmedPlayerName = playerName.trim();
+  const normalizedName =
+    trimmedPlayerName && !LEGACY_GUEST_NAMES.has(trimmedPlayerName)
+      ? trimmedPlayerName
+      : generateGuestName();
   localStorage.setItem(PLAYER_NAME_STORAGE_KEY, normalizedName);
 }
 
