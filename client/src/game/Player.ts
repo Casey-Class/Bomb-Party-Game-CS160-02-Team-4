@@ -7,7 +7,7 @@
  * UML methods: +submitWord(word: String), +addScore(points: int)
  */
 
-import {Player as IPlayer} from "@/data/mock-game.ts";
+import type { Player as IPlayer } from "@/data/mock-game.ts";
 
 export class Player implements IPlayer{
     private _id: string;

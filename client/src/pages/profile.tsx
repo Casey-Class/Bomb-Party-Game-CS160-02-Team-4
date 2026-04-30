@@ -1,10 +1,29 @@
-import { LogOut, Trophy, Swords, Percent, Flame } from "lucide-react";
+import { Flame, LogOut, Percent, Swords, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import {useEffect, useState } from "react";
 
+interface ProfileStats {
+  gamesPlayed: number;
+  wins: number;
+  winRate: number;
+  bestStreak: number;
+}
+
+interface RecentGame {
+  id: number;
+  players: number;
+  result: "win" | "loss";
+  time: string;
+}
+
+interface ProfileResponse {
+  success?: boolean;
+  stats?: ProfileStats;
+  recentGames?: RecentGame[];
+}
 
 const AVATAR_COLORS = [
   { bg: "bg-purple-500", label: "Purple" },
@@ -15,25 +34,17 @@ const AVATAR_COLORS = [
   { bg: "bg-amber-500", label: "Amber" },
 ];
 
-// Placeholder stats — swap these out with real API data when the backend is ready
-const MOCK_STATS = {
-  gamesPlayed: 48,
-  wins: 21,
-  winRate: 44,
-  bestStreak: 5,
+const EMPTY_STATS: ProfileStats = {
+  gamesPlayed: 0,
+  wins: 0,
+  winRate: 0,
+  bestStreak: 0,
 };
-
-const MOCK_RECENT_GAMES = [
-  { id: 1, players: 4, result: "win", time: "2 hours ago" },
-  { id: 2, players: 3, result: "loss", time: "Yesterday" },
-  { id: 3, players: 2, result: "win", time: "2 days ago" },
-  { id: 4, players: 5, result: "loss", time: "3 days ago" },
-];
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, getProfileData } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   const initials = user?.username
@@ -41,19 +52,27 @@ export function ProfilePage() {
     : "?";
 
   useEffect(() => {
-    if (user?.username) {
-      getProfileData(user.username).then(res => {
-        console.log("Backend response:", res);
-        if (res.success) setData(res);
-      }).catch(err => console.error("Profile fetch error:", err))
-          .finally(() => setLoading(false));
+    if (!user?.username) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
 
-  if (loading) return <div className="p-10 text-white">Loading stats...</div>;
+    getProfileData(user.username)
+      .then((response: ProfileResponse) => {
+        if (response.success) {
+          setData(response);
+        }
+      })
+      .catch((error) => console.error("Profile fetch error:", error))
+      .finally(() => setLoading(false));
+  }, [getProfileData, user]);
 
-  const stats = data?.stats || { gamesPlayed: 0, wins: 0, winRate: 0, bestStreak: 0 };
-  const recentGames = data?.recentGames || [];
+  if (loading) {
+    return <div className="p-10 text-white">Loading stats...</div>;
+  }
+
+  const stats = data?.stats ?? EMPTY_STATS;
+  const recentGames = data?.recentGames ?? [];
 
   function handleLogout() {
     logout();
@@ -61,16 +80,14 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center bg-zinc-900 p-6">
-      <div className="flex w-full max-w-md flex-col gap-4">
-
-        {/* Header */}
+    <div className="mx-auto flex min-h-[calc(100svh-74px)] w-full max-w-md flex-col gap-4 p-6">
         <div className="flex items-center justify-between py-2">
           <button
-            onClick={() => navigate("/home")}
-            className="text-sm text-white/40 hover:text-white/70 transition-colors"
+            className="text-sm text-white/40 transition-colors hover:text-white/70"
+            onClick={() => navigate("/")}
+            type="button"
           >
-            ← Back
+            {"<- Back"}
           </button>
           <h1 className="text-sm font-bold text-white/60 tracking-widest uppercase">
             Profile
@@ -78,7 +95,6 @@ export function ProfilePage() {
           <div className="w-10" />
         </div>
 
-        {/* Avatar + username */}
         <Card className="border-white/10 bg-zinc-800/80">
           <CardContent className="flex items-center gap-4 pt-6">
             <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-xl font-bold text-white">
@@ -91,18 +107,17 @@ export function ProfilePage() {
               <p className="text-xs text-white/40">Member since March 2025</p>
             </div>
             <Button
-              variant="ghost"
-              size="sm"
+              className="ml-auto text-white/40 hover:bg-white/5 hover:text-white/70"
               onClick={handleLogout}
-              className="ml-auto text-white/40 hover:text-white/70 hover:bg-white/5"
+              size="sm"
+              variant="ghost"
             >
-              <LogOut className="h-4 w-4 mr-1" />
+              <LogOut className="mr-1 h-4 w-4" />
               Logout
             </Button>
           </CardContent>
         </Card>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="border-white/10 bg-zinc-800/80">
             <CardContent className="flex flex-col items-center gap-1 pt-5 pb-4">
@@ -145,7 +160,6 @@ export function ProfilePage() {
           </Card>
         </div>
 
-        {/* Recent games */}
         <Card className="border-white/10 bg-zinc-800/80">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-white/60 tracking-widest uppercase">
@@ -155,8 +169,8 @@ export function ProfilePage() {
           <CardContent className="flex flex-col gap-2">
             {recentGames.map((game) => (
               <div
-                key={game.id}
                 className="flex items-center justify-between rounded-lg bg-zinc-900/60 px-4 py-3"
+                key={game.id}
               >
                 <div>
                   <p className="text-sm font-bold text-white">
@@ -178,7 +192,6 @@ export function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Avatar color picker */}
         <Card className="border-white/10 bg-zinc-800/80">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-white/60 tracking-widest uppercase">
@@ -189,16 +202,15 @@ export function ProfilePage() {
             <div className="flex gap-3">
               {AVATAR_COLORS.map((color) => (
                 <button
-                  key={color.label}
                   aria-label={color.label}
                   className={`h-9 w-9 rounded-full ${color.bg} transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/40`}
+                  key={color.label}
+                  type="button"
                 />
               ))}
             </div>
           </CardContent>
         </Card>
-
-      </div>
     </div>
   );
 }

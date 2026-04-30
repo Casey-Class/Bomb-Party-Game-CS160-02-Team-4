@@ -61,7 +61,7 @@ export function GamePage() {
     gameState.currentPlayerId === clientId;
 
   return (
-    <div className="flex h-svh w-full overflow-hidden bg-zinc-900">
+    <div className="flex min-h-[calc(100svh-74px)] overflow-hidden bg-zinc-900">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-white/5 border-b bg-zinc-900/80 px-4 py-2">
           <div className="flex items-center gap-2">

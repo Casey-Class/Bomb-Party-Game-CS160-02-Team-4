@@ -17,7 +17,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  loginAsGuest: () => void;
+  loginAsGuest: (username?: string) => void;
   getProfileData: (username: string) => Promise<any>;
 }
 
@@ -152,10 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginAsGuest = () => {
+  const loginAsGuest = (username?: string) => {
+    const normalizedUsername = username?.trim();
     const guestUser = {
       id: 0,
-      username: `Guest_${Math.random().toString(36).substr(2, 9)}`,
+      username:
+        normalizedUsername ||
+        `Guest_${Math.random().toString(36).slice(2, 11)}`,
     };
     setUser(guestUser);
     setToken(null);

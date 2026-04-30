@@ -1,8 +1,8 @@
 import { Route, Routes, Navigate } from "react-router";
+import { Navbar } from "@/components/navbar";
 import { GamePage } from "@/pages/game";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
-import { LobbyPage } from "@/pages/lobby";
 import { ProfilePage } from "@/pages/profile.tsx";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -22,42 +22,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<LoginPage />} path="/login" />
-      <Route element={<LoginPage />} path="/" />
-      <Route 
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        } 
-        path="/home" 
-      />
+    <div className="min-h-svh bg-zinc-900">
+      <Navbar />
+      <Routes>
+        <Route element={<LoginPage />} path="/login" />
+        <Route element={<HomePage />} path="/" />
+        <Route element={<Navigate to="/" replace />} path="/home" />
+        <Route element={<Navigate to="/" replace />} path="/lobby" />
         <Route
-            element={
-                <ProtectedRoute>
-                    <ProfilePage />
-                </ProtectedRoute>
-            }
-            path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+          path="/profile"
         />
-      <Route 
-        element={
-          <ProtectedRoute>
-            <LobbyPage />
-          </ProtectedRoute>
-        } 
-        path="/lobby"
-      />
-      <Route 
-        element={
-          <ProtectedRoute>
-            <GamePage />
-          </ProtectedRoute>
-        } 
-        path="/game/:roomId" 
-      />
-    </Routes>
+        <Route
+          element={
+            <ProtectedRoute>
+              <GamePage />
+            </ProtectedRoute>
+          }
+          path="/game/:roomId"
+        />
+      </Routes>
+    </div>
   );
 }
 

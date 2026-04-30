@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,15 +9,21 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "@/hooks/use-auth";
 
 export function LoginPage() {
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ username: "", password: "", confirmPassword: "" });
   const navigate = useNavigate();
   const { isAuthenticated, isGuest, isLoading: isAuthLoading, login, register, loginAsGuest } = useAuth();
+  const activeTab = searchParams.get("mode") === "register" ? "register" : "login";
+
+  const handleTabChange = (nextTab: string) => {
+    navigate(`/login?mode=${nextTab}`, { replace: true });
+  };
 
   useEffect(() => {
     if (!isAuthLoading && (isAuthenticated || isGuest)) {
-      navigate("/lobby", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [isAuthLoading, isAuthenticated, isGuest, navigate]);
 
@@ -28,7 +34,7 @@ export function LoginPage() {
     try {
       const success = await login(loginForm.username, loginForm.password);
       if (success) {
-        navigate("/lobby");
+        navigate("/");
       } else {
         setIsLoading(false);
       }
@@ -53,7 +59,7 @@ export function LoginPage() {
     try {
       const success = await register(registerForm.username, registerForm.password);
       if (success) {
-        navigate("/lobby");
+        navigate("/");
       } else {
         setIsLoading(false);
       }
@@ -67,18 +73,18 @@ export function LoginPage() {
 
   const handleGuestPlay = () => {
     loginAsGuest();
-    navigate("/lobby");
+    navigate("/");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <main className="flex min-h-[calc(100svh-74px)] items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Bomb Party</CardTitle>
           <CardDescription>Sign in to your account or create a new one</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="register">Sign Up</TabsTrigger>
@@ -175,6 +181,6 @@ export function LoginPage() {
           </Button>
         </CardFooter>
       </Card>
-    </div>
+    </main>
   );
 }
