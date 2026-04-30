@@ -1,4 +1,5 @@
 import { Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { GameState, Player } from "@/data/mock-game";
@@ -22,6 +23,10 @@ export function WordInput({
 }: WordInputProps) {
   const isPlaying = gameState.status === "playing";
   const isMyTurn = isPlaying && isLocalPlayer && currentPlayer?.isActive;
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const wasMyTurnRef = useRef(false);
+  const [draftWord, setDraftWord] = useState(typedWord);
+  const hasValidLength = draftWord.trim().length >= 3;
   let statusMessage: React.ReactNode = (
     <span>
       Waiting for{" "}
@@ -53,12 +58,38 @@ export function WordInput({
       : "Not your turn";
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!(typedWord.trim() && isMyTurn)) {
+  useEffect(() => {
+    if (!isMyTurn) {
+      setDraftWord("");
+      wasMyTurnRef.current = false;
       return;
     }
-    onSubmitWord?.(typedWord.trim());
+
+    setDraftWord(typedWord);
+  }, [isMyTurn, typedWord]);
+
+  useEffect(() => {
+    if (!isMyTurn || wasMyTurnRef.current) {
+      return;
+    }
+
+    wasMyTurnRef.current = true;
+
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isMyTurn]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!(isMyTurn && hasValidLength)) {
+      return;
+    }
+    onSubmitWord?.(draftWord.trim());
+    setDraftWord("");
     onTypedWordChange("");
   }
 
@@ -73,17 +104,21 @@ export function WordInput({
       <form className="flex gap-2" onSubmit={handleSubmit}>
         <Input
           autoComplete="off"
-          autoFocus={isMyTurn}
           className="border-white/10 bg-zinc-800/80 text-center font-mono text-lg text-white tracking-wider placeholder:text-white/30"
           disabled={!isMyTurn}
           id="word-input"
-          onChange={(e) => onTypedWordChange(e.target.value.toUpperCase())}
+          onChange={(e) => {
+            const nextWord = e.target.value.toUpperCase();
+            setDraftWord(nextWord);
+            onTypedWordChange(nextWord);
+          }}
           placeholder={inputPlaceholder}
-          value={typedWord}
+          ref={inputRef}
+          value={draftWord}
         />
         <Button
           className="shrink-0 bg-amber-500 text-black hover:bg-amber-400"
-          disabled={!(isMyTurn && typedWord.trim())}
+          disabled={!(isMyTurn && hasValidLength)}
           size="icon"
           type="submit"
         >

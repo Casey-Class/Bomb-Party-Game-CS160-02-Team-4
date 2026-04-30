@@ -400,19 +400,19 @@ export class WebSocketGameService {
       player.id === activePlayer.id
         ? {
             ...player,
-            currentWord: trimmedWord,
+            currentWord: null,
             score: player.score + trimmedWord.length,
           }
-        : player,
+        : {
+            ...player,
+            currentWord: null,
+          },
     );
     const nextTurn = this.findNextEligiblePlayer(updatedPlayers, this.getPlayerIndex(activePlayer.id));
 
     this.applyTurnUpdate({
       ...nextTurn,
-      players: updatedPlayers.map((player) => ({
-        ...player,
-        currentWord: player.id === nextTurn.currentPlayerId ? null : player.currentWord,
-      })),
+      players: updatedPlayers,
     });
     this.appendSystemMessage(`${activePlayer.name} played ${trimmedWord}.`);
 
@@ -526,6 +526,7 @@ export class WebSocketGameService {
       ...this.snapshot,
       players: players.map((player) => ({
         ...player,
+        currentWord: null,
         isActive: false,
       })),
       gameState: {
@@ -607,6 +608,7 @@ export class WebSocketGameService {
       ...this.snapshot,
       players: players.map((player) => ({
         ...player,
+        currentWord: null,
         isActive: player.id === currentPlayerId,
       })),
       gameState: {
