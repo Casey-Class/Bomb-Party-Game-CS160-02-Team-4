@@ -118,16 +118,6 @@ export function LobbyPage() {
             </CardContent>
           </Card>
         </div>
-
-        <div className="mt-8 text-center">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/login")}
-            className="border-zinc-600 text-zinc-400 hover:bg-zinc-800"
-          >
-            Back to Login
-          </Button>
-        </div>
       </div>
     </div>
   );
