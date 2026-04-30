@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import {useEffect, useState } from "react";
+
 
 const AVATAR_COLORS = [
   { bg: "bg-purple-500", label: "Purple" },
@@ -30,11 +32,28 @@ const MOCK_RECENT_GAMES = [
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, getProfileData } = useAuth();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
     : "?";
+
+  useEffect(() => {
+    if (user?.username) {
+      getProfileData(user.username).then(res => {
+        console.log("Backend response:", res);
+        if (res.success) setData(res);
+      }).catch(err => console.error("Profile fetch error:", err))
+          .finally(() => setLoading(false));
+    }
+  }, [user]);
+
+  if (loading) return <div className="p-10 text-white">Loading stats...</div>;
+
+  const stats = data?.stats || { gamesPlayed: 0, wins: 0, winRate: 0, bestStreak: 0 };
+  const recentGames = data?.recentGames || [];
 
   function handleLogout() {
     logout();
@@ -89,7 +108,7 @@ export function ProfilePage() {
             <CardContent className="flex flex-col items-center gap-1 pt-5 pb-4">
               <Swords className="h-5 w-5 text-white/30" />
               <p className="text-2xl font-black text-white">
-                {MOCK_STATS.gamesPlayed}
+                {stats.gamesPlayed}
               </p>
               <p className="text-xs text-white/40">Games played</p>
             </CardContent>
@@ -99,7 +118,7 @@ export function ProfilePage() {
             <CardContent className="flex flex-col items-center gap-1 pt-5 pb-4">
               <Trophy className="h-5 w-5 text-amber-400" />
               <p className="text-2xl font-black text-amber-400">
-                {MOCK_STATS.wins}
+                {stats.wins}
               </p>
               <p className="text-xs text-white/40">Wins</p>
             </CardContent>
@@ -109,7 +128,7 @@ export function ProfilePage() {
             <CardContent className="flex flex-col items-center gap-1 pt-5 pb-4">
               <Percent className="h-5 w-5 text-white/30" />
               <p className="text-2xl font-black text-white">
-                {MOCK_STATS.winRate}%
+                {stats.winRate}%
               </p>
               <p className="text-xs text-white/40">Win rate</p>
             </CardContent>
@@ -119,7 +138,7 @@ export function ProfilePage() {
             <CardContent className="flex flex-col items-center gap-1 pt-5 pb-4">
               <Flame className="h-5 w-5 text-orange-400" />
               <p className="text-2xl font-black text-orange-400">
-                {MOCK_STATS.bestStreak}
+                {stats.bestStreak}
               </p>
               <p className="text-xs text-white/40">Best streak</p>
             </CardContent>
@@ -134,7 +153,7 @@ export function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {MOCK_RECENT_GAMES.map((game) => (
+            {recentGames.map((game) => (
               <div
                 key={game.id}
                 className="flex items-center justify-between rounded-lg bg-zinc-900/60 px-4 py-3"

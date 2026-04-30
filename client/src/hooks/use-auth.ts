@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loginAsGuest: () => void;
+  getProfileData: (username: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -176,6 +177,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate("/login");
   };
 
+  const getProfileData = async (username: string) => {
+    const response = await fetch(`http://localhost:5555/api/auth/profile?username=${username}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.json();
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -186,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     loginAsGuest,
+    getProfileData
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);
@@ -198,3 +210,4 @@ export function useAuth() {
   }
   return context;
 }
+
