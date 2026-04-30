@@ -220,15 +220,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getProfileData = async (
     username: string
   ): Promise<ProfileDataResponse> => {
-    const response = await fetch(
-      `/api/auth/profile?username=${username}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`/api/auth/profile?username=${username}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
     return response.json();
   };
 

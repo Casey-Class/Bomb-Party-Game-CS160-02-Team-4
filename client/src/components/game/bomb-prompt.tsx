@@ -11,6 +11,8 @@ export function BombPrompt({ gameState, activePlayerAngle }: BombPromptProps) {
   const normalizedMaxTime = Math.max(maxTime, 1);
   const timeRemainingPercent = (timeLeft / normalizedMaxTime) * 100;
   const isUrgent = gameState.status === "playing" && timeLeft <= 5;
+  const shouldShowDirectionArrow =
+    gameState.status === "playing" && gameState.currentPlayerId !== "";
   let syllableLabel = currentSyllable;
 
   if (gameState.status === "waiting") {
@@ -54,7 +56,9 @@ export function BombPrompt({ gameState, activePlayerAngle }: BombPromptProps) {
           </div>
         </div>
 
-        <DirectionArrow angleToActivePlayer={activePlayerAngle} />
+        {shouldShowDirectionArrow && (
+          <DirectionArrow angleToActivePlayer={activePlayerAngle} />
+        )}
       </div>
     </div>
   );
