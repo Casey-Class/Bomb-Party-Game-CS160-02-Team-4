@@ -1,4 +1,4 @@
-import { createUser, getUserByUsername, verifyPassword } from '../lib/auth';
+import { createUser, getUserById, getUserByUsername, verifyPassword } from '../lib/auth';
 import { generateToken, verifyToken, extractTokenFromHeader } from '../lib/jwt';
 
 export interface RegisterRequest {
@@ -17,6 +17,7 @@ export interface AuthResponse {
   user?: {
     id: number;
     username: string;
+    avatarColor: string;
   };
   token?: string;
 }
@@ -72,7 +73,8 @@ export async function registerHandler(req: Request): Promise<Response> {
       message: 'User registered successfully',
       user: {
         id: user.id,
-        username: user.username
+        username: user.username,
+        avatarColor: user.avatar_color
       },
       token
     } as AuthResponse);
@@ -123,7 +125,8 @@ export async function loginHandler(req: Request): Promise<Response> {
       message: 'Login successful',
       user: {
         id: user.id,
-        username: user.username
+        username: user.username,
+        avatarColor: user.avatar_color
       },
       token
     } as AuthResponse);
@@ -157,12 +160,21 @@ export async function validateHandler(req: Request): Promise<Response> {
       } as AuthResponse, { status: 401 });
     }
 
+    const user = await getUserById(payload.userId);
+    if (!user) {
+      return Response.json({
+        success: false,
+        message: 'User not found'
+      } as AuthResponse, { status: 404 });
+    }
+
     return Response.json({
       success: true,
       message: 'Token is valid',
       user: {
-        id: payload.userId,
-        username: payload.username
+        id: user.id,
+        username: user.username,
+        avatarColor: user.avatar_color
       }
     } as AuthResponse);
 

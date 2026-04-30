@@ -11,20 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
-const AVATAR_COLORS = [
-  "bg-purple-500",
-  "bg-teal-500",
-  "bg-orange-500",
-  "bg-pink-500",
-  "bg-blue-500",
-  "bg-amber-500",
-];
-
-function getAvatarColor(username: string) {
-  const hash = username.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length] ?? AVATAR_COLORS[0];
-}
-
 function getInitials(username: string) {
   return username.slice(0, 2).toUpperCase();
 }
@@ -87,7 +73,8 @@ export function Navbar() {
                       type="button"
                     >
                       <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white ${getAvatarColor(user.username)}`}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white"
+                        style={{ backgroundColor: user.avatarColor }}
                       >
                         {getInitials(user.username)}
                       </div>

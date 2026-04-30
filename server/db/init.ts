@@ -10,6 +10,7 @@ const initStatements = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    avatar_color TEXT NOT NULL DEFAULT '#a855f7',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
   );`,
   `CREATE TABLE IF NOT EXISTS games (
@@ -33,6 +34,16 @@ const initStatements = [
 
 for (const statement of initStatements) {
   db.run(statement);
+}
+
+const userColumns = db
+  .query("PRAGMA table_info(users);")
+  .all() as Array<{ name: string }>;
+
+if (!userColumns.some((column) => column.name === "avatar_color")) {
+  db.run(
+    "ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT '#a855f7';",
+  );
 }
 
 console.log(`SQLite ready at ${dbPath}`);

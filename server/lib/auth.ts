@@ -7,6 +7,7 @@ export interface User {
   id: number;
   username: string;
   password_hash: string;
+  avatar_color: string;
   created_at: string;
 }
 
@@ -25,7 +26,7 @@ export async function createUser(username: string, password: string): Promise<Us
     const stmt = db.prepare(`
       INSERT INTO users (username, password_hash)
       VALUES (?, ?)
-      RETURNING id, username, password_hash, created_at
+      RETURNING id, username, password_hash, avatar_color, created_at
     `);
     
     const user = stmt.get(username, passwordHash) as User | undefined;
@@ -39,7 +40,7 @@ export async function createUser(username: string, password: string): Promise<Us
 export async function getUserByUsername(username: string): Promise<User | null> {
   try {
     const stmt = db.prepare(`
-      SELECT id, username, password_hash, created_at
+      SELECT id, username, password_hash, avatar_color, created_at
       FROM users
       WHERE username = ?
     `);
@@ -55,7 +56,7 @@ export async function getUserByUsername(username: string): Promise<User | null> 
 export async function getUserById(id: number): Promise<User | null> {
   try {
     const stmt = db.prepare(`
-      SELECT id, username, password_hash, created_at
+      SELECT id, username, password_hash, avatar_color, created_at
       FROM users
       WHERE id = ?
     `);
@@ -64,6 +65,26 @@ export async function getUserById(id: number): Promise<User | null> {
     return user || null;
   } catch (error) {
     console.error('Error getting user by ID:', error);
+    return null;
+  }
+}
+
+export async function updateUserAvatarColor(
+  id: number,
+  avatarColor: string,
+): Promise<User | null> {
+  try {
+    const stmt = db.prepare(`
+      UPDATE users
+      SET avatar_color = ?
+      WHERE id = ?
+      RETURNING id, username, password_hash, avatar_color, created_at
+    `);
+
+    const user = stmt.get(avatarColor, id) as User | undefined;
+    return user || null;
+  } catch (error) {
+    console.error("Error updating avatar color:", error);
     return null;
   }
 }

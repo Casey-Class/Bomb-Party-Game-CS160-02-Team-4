@@ -1,5 +1,6 @@
-import { Flame, LogOut, Percent, Swords, Trophy } from "lucide-react";
+import { Flame, Percent, Swords, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,17 +22,22 @@ interface RecentGame {
 
 interface ProfileResponse {
   success?: boolean;
+  user?: {
+    id: number;
+    username: string;
+    avatarColor: string;
+  };
   stats?: ProfileStats;
   recentGames?: RecentGame[];
 }
 
 const AVATAR_COLORS = [
-  { bg: "bg-purple-500", label: "Purple" },
-  { bg: "bg-teal-500", label: "Teal" },
-  { bg: "bg-orange-500", label: "Orange" },
-  { bg: "bg-pink-500", label: "Pink" },
-  { bg: "bg-blue-500", label: "Blue" },
-  { bg: "bg-amber-500", label: "Amber" },
+  { value: "#a855f7", label: "Purple" },
+  { value: "#14b8a6", label: "Teal" },
+  { value: "#f97316", label: "Orange" },
+  { value: "#ec4899", label: "Pink" },
+  { value: "#3b82f6", label: "Blue" },
+  { value: "#f59e0b", label: "Amber" },
 ];
 
 const EMPTY_STATS: ProfileStats = {
@@ -43,9 +49,13 @@ const EMPTY_STATS: ProfileStats = {
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout, getProfileData } = useAuth();
+  const { user, getProfileData, updateAvatarColor } = useAuth();
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAvatarColor, setSelectedAvatarColor] = useState(
+    user?.avatarColor ?? AVATAR_COLORS[0]!.value,
+  );
+  const [isSavingAvatarColor, setIsSavingAvatarColor] = useState(false);
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
@@ -61,6 +71,9 @@ export function ProfilePage() {
       .then((response: ProfileResponse) => {
         if (response.success) {
           setData(response);
+          setSelectedAvatarColor(
+            response.user?.avatarColor ?? user?.avatarColor ?? AVATAR_COLORS[0]!.value,
+          );
         }
       })
       .catch((error) => console.error("Profile fetch error:", error))
@@ -74,9 +87,38 @@ export function ProfilePage() {
   const stats = data?.stats ?? EMPTY_STATS;
   const recentGames = data?.recentGames ?? [];
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
+  async function handleAvatarColorSelect(avatarColor: string) {
+    if (!user || isSavingAvatarColor || avatarColor === selectedAvatarColor) {
+      return;
+    }
+
+    const previousAvatarColor = selectedAvatarColor;
+    setSelectedAvatarColor(avatarColor);
+    setIsSavingAvatarColor(true);
+
+    const success = await updateAvatarColor(avatarColor);
+
+    if (!success) {
+      setSelectedAvatarColor(previousAvatarColor);
+    } else {
+      setData((currentData) =>
+        currentData
+          ? {
+              ...currentData,
+              user: currentData.user
+                ? { ...currentData.user, avatarColor }
+                : {
+                    id: user.id,
+                    username: user.username,
+                    avatarColor,
+                  },
+            }
+          : currentData,
+      );
+      toast.success("Avatar color updated");
+    }
+
+    setIsSavingAvatarColor(false);
   }
 
   return (
@@ -97,7 +139,10 @@ export function ProfilePage() {
 
         <Card className="border-white/10 bg-zinc-800/80">
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-xl font-bold text-white">
+            <div
+              className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+              style={{ backgroundColor: selectedAvatarColor }}
+            >
               {initials}
             </div>
             <div className="flex flex-col gap-0.5">
@@ -106,15 +151,6 @@ export function ProfilePage() {
               </p>
               <p className="text-xs text-white/40">Member since March 2025</p>
             </div>
-            <Button
-              className="ml-auto text-white/40 hover:bg-white/5 hover:text-white/70"
-              onClick={handleLogout}
-              size="sm"
-              variant="ghost"
-            >
-              <LogOut className="mr-1 h-4 w-4" />
-              Logout
-            </Button>
           </CardContent>
         </Card>
 
@@ -203,8 +239,15 @@ export function ProfilePage() {
               {AVATAR_COLORS.map((color) => (
                 <button
                   aria-label={color.label}
-                  className={`h-9 w-9 rounded-full ${color.bg} transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/40`}
+                  aria-pressed={selectedAvatarColor === color.value}
+                  className={`h-9 w-9 rounded-full transition-transform focus:outline-none focus:ring-2 focus:ring-white/40 ${
+                    selectedAvatarColor === color.value
+                      ? "scale-110 ring-2 ring-white"
+                      : "hover:scale-110"
+                  }`}
                   key={color.label}
+                  onClick={() => void handleAvatarColorSelect(color.value)}
+                  style={{ backgroundColor: color.value }}
                   type="button"
                 />
               ))}

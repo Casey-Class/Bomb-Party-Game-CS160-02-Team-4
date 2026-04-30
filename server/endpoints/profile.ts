@@ -1,8 +1,55 @@
 // server/endpoints/profile.ts
 import { db } from "../db/init";
+import { extractTokenFromHeader, verifyToken } from "../lib/jwt";
+import { getUserById, updateUserAvatarColor } from "../lib/auth";
+
+const VALID_AVATAR_COLORS = new Set([
+  "#a855f7",
+  "#14b8a6",
+  "#f97316",
+  "#ec4899",
+  "#3b82f6",
+  "#f59e0b",
+]);
 
 export const profileEndpoint = async (req: Request) => {
     try{
+    if (req.method === "PUT") {
+        const authHeader = req.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+
+        if (!token) {
+            return Response.json({ success: false, message: "No token provided" }, { status: 401 });
+        }
+
+        const payload = verifyToken(token);
+        if (!payload) {
+            return Response.json({ success: false, message: "Invalid or expired token" }, { status: 401 });
+        }
+
+        const body = await req.json().catch(() => null) as { avatarColor?: string } | null;
+        const avatarColor = body?.avatarColor?.trim();
+
+        if (!avatarColor || !VALID_AVATAR_COLORS.has(avatarColor)) {
+            return Response.json({ success: false, message: "Invalid avatar color" }, { status: 400 });
+        }
+
+        const updatedUser = await updateUserAvatarColor(payload.userId, avatarColor);
+
+        if (!updatedUser) {
+            return Response.json({ success: false, message: "User not found" }, { status: 404 });
+        }
+
+        return Response.json({
+            success: true,
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                avatarColor: updatedUser.avatar_color
+            }
+        });
+    }
+
     const url = new URL(req.url);
     // Get username from query param (e.g., /api/auth/profile?username=casey)
     const username = url.searchParams.get("username");
@@ -17,8 +64,14 @@ export const profileEndpoint = async (req: Request) => {
         return Response.json({ success: false, message: "User not found" }, { status: 404 });
     }
 
-    const totalGames = db.query("SELECT COUNT(*) as count FROM game_participants WHERE user_id = ?").get([user.id]) as { count: number };
-    const wins = db.query("SELECT COUNT(*) as count FROM games WHERE winner_user_id = ?").get([user.id]) as { count: number };
+    const profileUser = await getUserById(user.id);
+
+    if (!profileUser) {
+        return Response.json({ success: false, message: "User not found" }, { status: 404 });
+    }
+
+    const totalGames = db.query("SELECT COUNT(*) as count FROM game_participants WHERE user_id = ?").get(user.id) as { count: number };
+    const wins = db.query("SELECT COUNT(*) as count FROM games WHERE winner_user_id = ?").get(user.id) as { count: number };
 
     const recentGames = db.query(`
     SELECT g.id, g.winner_user_id, g.finished_at,
@@ -27,7 +80,7 @@ export const profileEndpoint = async (req: Request) => {
     JOIN game_participants gp ON g.id = gp.game_id
     WHERE gp.user_id = ?
     ORDER BY g.finished_at DESC LIMIT 5
-  `).all([user.id]);
+  `).all(user.id);
 
     const allGames = db.query(`
   SELECT g.winner_user_id 
@@ -35,7 +88,7 @@ export const profileEndpoint = async (req: Request) => {
   JOIN game_participants gp ON g.id = gp.game_id
   WHERE gp.user_id = ?
   ORDER BY g.finished_at ASC
-`).all([user.id]) as { winner_user_id: number }[];
+`).all(user.id) as { winner_user_id: number }[];
 
     let bestStreak = 0;
     let currentStreak = 0;
@@ -56,6 +109,11 @@ export const profileEndpoint = async (req: Request) => {
 
     return Response.json({
         success: true,
+        user: {
+            id: profileUser.id,
+            username: profileUser.username,
+            avatarColor: profileUser.avatar_color
+        },
         stats: {
             gamesPlayed: totalGames.count,
             wins: wins.count,

@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 export interface User {
   id: number;
   username: string;
+  avatarColor: string;
 }
 
 interface AuthContextType {
@@ -19,11 +20,13 @@ interface AuthContextType {
   logout: () => void;
   loginAsGuest: (username?: string) => void;
   getProfileData: (username: string) => Promise<any>;
+  updateAvatarColor: (avatarColor: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL = "http://localhost:5555/api/auth";
+const DEFAULT_AVATAR_COLOR = "#a855f7";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -40,8 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        const parsedUser = JSON.parse(storedUser) as Partial<User>;
+        setUser({
+          id: parsedUser.id ?? 0,
+          username: parsedUser.username ?? "Guest",
+          avatarColor: parsedUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
+        });
         setIsGuest(false);
         localStorage.removeItem("guest");
         validateToken(storedToken);
@@ -54,8 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedGuest === "true" && storedUser) {
       try {
-        const guestUser = JSON.parse(storedUser);
-        setUser(guestUser);
+        const guestUser = JSON.parse(storedUser) as Partial<User>;
+        setUser({
+          id: guestUser.id ?? 0,
+          username: guestUser.username ?? "Guest",
+          avatarColor: guestUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
+        });
         setIsGuest(true);
         setIsLoading(false);
         return;
@@ -82,6 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!data.success) {
         logout();
         toast.error("Session expired. Please log in again.");
+        return;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
     } catch (error) {
       console.error("Token validation error:", error);
@@ -159,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username:
         normalizedUsername ||
         `Guest_${Math.random().toString(36).slice(2, 11)}`,
+      avatarColor: DEFAULT_AVATAR_COLOR,
     };
     setUser(guestUser);
     setToken(null);
@@ -190,6 +208,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.json();
   };
 
+  const updateAvatarColor = async (avatarColor: string): Promise<boolean> => {
+    if (isGuest) {
+      if (!user) {
+        return false;
+      }
+
+      const updatedGuestUser = { ...user, avatarColor };
+      setUser(updatedGuestUser);
+      localStorage.setItem("user", JSON.stringify(updatedGuestUser));
+      return true;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ avatarColor }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success || !data.user) {
+        toast.error(data.message || "Failed to update avatar color");
+        return false;
+      }
+
+      setUser(data.user);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      return true;
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+      console.error("Update avatar color error:", error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -200,7 +257,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     loginAsGuest,
-    getProfileData
+    getProfileData,
+    updateAvatarColor
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);
