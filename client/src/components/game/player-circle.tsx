@@ -85,18 +85,27 @@ function PlayerNode({ player, style, currentSyllable }: PlayerNodeProps) {
       <div
         className={`relative h-14 w-14 overflow-hidden rounded-sm border-2 transition-all duration-300 ${avatarClassName}`}
       >
-        <div
-          className="flex h-full w-full items-center justify-center font-bold text-lg text-white"
-          style={{
-            backgroundColor: isEliminated ? "#555" : player.avatarColor,
-          }}
-        >
-          {isEliminated ? (
-            <Skull className="h-6 w-6 text-white/60" />
-          ) : (
-            player.name.slice(0, 2).toUpperCase()
-          )}
-        </div>
+        {player.avatarUrl && !isEliminated ? (
+          <div
+            aria-label={`${player.name} avatar`}
+            className="h-full w-full bg-center bg-cover"
+            role="img"
+            style={{ backgroundImage: `url(${player.avatarUrl})` }}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center font-bold text-lg text-white"
+            style={{
+              backgroundColor: isEliminated ? "#555" : player.avatarColor,
+            }}
+          >
+            {isEliminated ? (
+              <Skull className="h-6 w-6 text-white/60" />
+            ) : (
+              player.name.slice(0, 2).toUpperCase()
+            )}
+          </div>
+        )}
 
         {isActive && (
           <div className="absolute inset-0 animate-pulse rounded-sm bg-amber-400/10" />

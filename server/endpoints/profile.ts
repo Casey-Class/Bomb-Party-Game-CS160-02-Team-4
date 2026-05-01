@@ -1,7 +1,18 @@
 // server/endpoints/profile.ts
 import { db } from "../db/init";
 import { extractTokenFromHeader, verifyToken } from "../lib/jwt";
-import { getUserById, updateUserAvatarColor } from "../lib/auth";
+import {
+  getUserById,
+  updateUserAvatarColor,
+  updateUserAvatarUrl,
+} from "../lib/auth";
+import { buildAbsoluteUrl } from "../lib/http";
+import {
+  deleteAvatarFileByUrl,
+  getAvatarUploadLimitBytes,
+  isSupportedAvatarMimeType,
+  saveAvatarFile,
+} from "../lib/uploads";
 
 const VALID_AVATAR_COLORS = new Set([
   "#a855f7",
@@ -27,17 +38,54 @@ export const profileEndpoint = async (req: Request) => {
             return Response.json({ success: false, message: "Invalid or expired token" }, { status: 401 });
         }
 
-        const body = await req.json().catch(() => null) as { avatarColor?: string } | null;
-        const avatarColor = body?.avatarColor?.trim();
-
-        if (!avatarColor || !VALID_AVATAR_COLORS.has(avatarColor)) {
-            return Response.json({ success: false, message: "Invalid avatar color" }, { status: 400 });
-        }
-
-        const updatedUser = await updateUserAvatarColor(payload.userId, avatarColor);
+        const contentType = req.headers.get("Content-Type") ?? "";
+        let updatedUser = await getUserById(payload.userId);
 
         if (!updatedUser) {
             return Response.json({ success: false, message: "User not found" }, { status: 404 });
+        }
+
+        if (contentType.includes("multipart/form-data")) {
+            const formData = await req.formData();
+            const avatarFile = formData.get("avatar");
+
+            if (!(avatarFile instanceof File)) {
+                return Response.json({ success: false, message: "Avatar file is required" }, { status: 400 });
+            }
+
+            if (!isSupportedAvatarMimeType(avatarFile.type)) {
+                return Response.json({ success: false, message: "Avatar must be PNG, JPG, WEBP, or GIF" }, { status: 400 });
+            }
+
+            if (avatarFile.size > getAvatarUploadLimitBytes()) {
+                return Response.json({ success: false, message: "Avatar must be 5MB or smaller" }, { status: 400 });
+            }
+
+            const previousAvatarUrl = updatedUser.avatar_url;
+            const savedFile = await saveAvatarFile(payload.userId, avatarFile);
+            updatedUser = await updateUserAvatarUrl(payload.userId, savedFile.publicUrl);
+
+            if (!updatedUser) {
+                await deleteAvatarFileByUrl(savedFile.publicUrl);
+                return Response.json({ success: false, message: "User not found" }, { status: 404 });
+            }
+
+            if (previousAvatarUrl) {
+                await deleteAvatarFileByUrl(previousAvatarUrl);
+            }
+        } else {
+            const body = await req.json().catch(() => null) as { avatarColor?: string } | null;
+            const avatarColor = body?.avatarColor?.trim();
+
+            if (!avatarColor || !VALID_AVATAR_COLORS.has(avatarColor)) {
+                return Response.json({ success: false, message: "Invalid avatar color" }, { status: 400 });
+            }
+
+            updatedUser = await updateUserAvatarColor(payload.userId, avatarColor);
+
+            if (!updatedUser) {
+                return Response.json({ success: false, message: "User not found" }, { status: 404 });
+            }
         }
 
         return Response.json({
@@ -45,7 +93,8 @@ export const profileEndpoint = async (req: Request) => {
             user: {
                 id: updatedUser.id,
                 username: updatedUser.username,
-                avatarColor: updatedUser.avatar_color
+                avatarColor: updatedUser.avatar_color,
+                avatarUrl: buildAbsoluteUrl(req, updatedUser.avatar_url),
             }
         });
     }
@@ -126,6 +175,7 @@ export const profileEndpoint = async (req: Request) => {
             id: profileUser.id,
             username: profileUser.username,
             avatarColor: profileUser.avatar_color,
+            avatarUrl: buildAbsoluteUrl(req, profileUser.avatar_url),
             createdAt: profileUser.created_at,
             lastGameAt: totals.last_game_at
         },

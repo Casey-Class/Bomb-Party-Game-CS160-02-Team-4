@@ -1,10 +1,37 @@
 import "./db/init";
-import { healthEndpoint } from "./endpoints/health";
-import { rootEndpoint } from "./endpoints/root";
-import {profileEndpoint} from "./endpoints/profile";
+import { stat } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { registerEndpoint, loginEndpoint, validateEndpoint } from "./endpoints/auth";
+import { healthEndpoint } from "./endpoints/health";
+import { profileEndpoint } from "./endpoints/profile";
+import { rootEndpoint } from "./endpoints/root";
+import { ensureUploadDirectories } from "./lib/uploads";
 import { getDictionarySize } from "./words/dictionary";
 import { handleWebSocketUpgrade, websocket } from "./websocket";
+
+const uploadRoot = join(import.meta.dir, "uploads");
+
+async function staticUploadHandler(req: Request) {
+  const url = new URL(req.url);
+  const relativePath = url.pathname.replace(/^\/uploads\//, "");
+  const filePath = resolve(uploadRoot, relativePath);
+
+  if (!filePath.startsWith(`${uploadRoot}/`) && filePath !== uploadRoot) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  try {
+    const fileStat = await stat(filePath);
+
+    if (!fileStat.isFile()) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    return new Response(Bun.file(filePath));
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+}
 
 // CORS wrapper for endpoints
 function withCors(handler: (req: Request) => Response | Promise<Response>) {
@@ -24,7 +51,10 @@ function withCors(handler: (req: Request) => Response | Promise<Response>) {
       const response = await handler(req);
 
       if (!response) {
-        return new Response("Internal Server Error: No response from handler", { status: 500, headers: corsHeaders });
+        return new Response("Internal Server Error: No response from handler", {
+          status: 500,
+          headers: corsHeaders,
+        });
       }
 
       const newHeaders = new Headers(response.headers);
@@ -35,14 +65,15 @@ function withCors(handler: (req: Request) => Response | Promise<Response>) {
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
-        headers: newHeaders
+        headers: newHeaders,
       });
-
     } catch (err) {
       console.error("CORS Wrapper Error:", err);
-      return new Response("Internal Server Error", { status: 500, headers: corsHeaders });
+      return new Response("Internal Server Error", {
+        status: 500,
+        headers: corsHeaders,
+      });
     }
-
   };
 }
 
@@ -56,13 +87,18 @@ const server = Bun.serve({
     "/api/auth/login": withCors(loginEndpoint),
     "/api/auth/validate": withCors(validateEndpoint),
     "/api/auth/profile": withCors(profileEndpoint),
+    "/uploads/*": withCors(staticUploadHandler),
   },
-  fetch(req, server) {
+  async fetch(req, server) {
     const url = new URL(req.url);
 
+    if (url.pathname.startsWith("/uploads/")) {
+      return withCors(staticUploadHandler)(req);
+    }
+
     if (url.pathname === "/ws") {
-      const upgraded = handleWebSocketUpgrade(req, server);
-      if (upgraded) return; // Return undefined here so Bun knows it was upgraded
+      const upgraded = await handleWebSocketUpgrade(req, server);
+      if (upgraded) return;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
   },
@@ -78,5 +114,6 @@ const server = Bun.serve({
   },
 });
 
+await ensureUploadDirectories();
 console.log(`Server running at ${server.url}`);
 console.log(`Loaded dictionary with ${getDictionarySize()} words`);

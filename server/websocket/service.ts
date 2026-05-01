@@ -33,10 +33,19 @@ export class WebSocketGameService {
     return structuredClone(this.snapshot);
   }
 
+  public canPlayerJoin(playerId: string) {
+    return (
+      this.snapshot.players.some((player) => player.id === playerId) ||
+      this.snapshot.players.length < this.snapshot.gameSettings.maxPlayers
+    );
+  }
+
   public connectPlayer(
     playerId: string,
     playerName: string,
     userId: number | null,
+    avatarColor?: string | null,
+    avatarUrl?: string | null,
   ): GameSnapshotDto {
     const existingPlayer = this.resolvePlayer(playerId);
     const nextPlayerName = playerName.trim();
@@ -50,6 +59,8 @@ export class WebSocketGameService {
                 ...player,
                 name: nextPlayerName || player.name,
                 userId,
+                avatarColor: avatarColor || player.avatarColor,
+                avatarUrl: avatarUrl ?? player.avatarUrl,
                 isConnected: true,
               }
             : player,
@@ -69,6 +80,8 @@ export class WebSocketGameService {
       this.snapshot.players.length + 1,
       userId,
       this.snapshot.gameSettings.startingLives,
+      avatarColor ?? undefined,
+      avatarUrl ?? undefined,
     );
 
     this.snapshot = {

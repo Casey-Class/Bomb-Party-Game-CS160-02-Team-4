@@ -11,6 +11,7 @@ const initStatements = [
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     avatar_color TEXT NOT NULL DEFAULT '#a855f7',
+    avatar_url TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
   );`,
   `CREATE TABLE IF NOT EXISTS games (
@@ -46,6 +47,10 @@ if (!userColumns.some((column) => column.name === "avatar_color")) {
   db.run(
     "ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT '#a855f7';",
   );
+}
+
+if (!userColumns.some((column) => column.name === "avatar_url")) {
+  db.run("ALTER TABLE users ADD COLUMN avatar_url TEXT;");
 }
 
 const gameColumns = db.query("PRAGMA table_info(games);").all() as Array<{

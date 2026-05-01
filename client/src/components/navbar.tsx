@@ -79,10 +79,19 @@ export function Navbar() {
             type="button"
           >
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-full font-bold text-sm text-white"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full font-bold text-sm text-white"
               style={{ backgroundColor: user.avatarColor }}
             >
-              {getInitials(user.username)}
+              {user.avatarUrl ? (
+                <div
+                  aria-label={`${user.username} avatar`}
+                  className="h-full w-full bg-center bg-cover"
+                  role="img"
+                  style={{ backgroundImage: `url(${user.avatarUrl})` }}
+                />
+              ) : (
+                getInitials(user.username)
+              )}
             </div>
             <div className="hidden min-w-0 sm:block">
               <p className="truncate font-semibold text-sm text-white">

@@ -86,9 +86,12 @@ export type ServerEvent =
 
 export interface SocketData {
   authUserId: number | null;
+  authAvatarColor: string | null;
+  authAvatarUrl: string | null;
   authUsername: string | null;
   clientId: string;
   playerId: string;
   playerName: string;
   roomId: string;
+  roomWasExpired?: boolean;
 }

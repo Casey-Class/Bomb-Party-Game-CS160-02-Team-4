@@ -12,6 +12,7 @@ import { generateGuestName } from "@/lib/player-identity";
 
 export interface User {
   avatarColor: string;
+  avatarUrl: string | null;
   id: number;
   username: string;
 }
@@ -34,6 +35,7 @@ interface AuthContextType {
   register: (username: string, password: string) => Promise<boolean>;
   token: string | null;
   updateAvatarColor: (avatarColor: string) => Promise<boolean>;
+  uploadAvatar: (file: File) => Promise<boolean>;
   user: User | null;
 }
 
@@ -41,6 +43,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL = "/api/auth";
 const DEFAULT_AVATAR_COLOR = "#a855f7";
+
+function parseStoredUser(rawUser: string) {
+  const parsedUser = JSON.parse(rawUser) as Partial<User>;
+
+  return {
+    id: parsedUser.id ?? 0,
+    username: parsedUser.username ?? generateGuestName(),
+    avatarColor: parsedUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
+    avatarUrl: parsedUser.avatarUrl ?? null,
+  } satisfies User;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -96,12 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
-        const parsedUser = JSON.parse(storedUser) as Partial<User>;
-        setUser({
-          id: parsedUser.id ?? 0,
-          username: parsedUser.username ?? generateGuestName(),
-          avatarColor: parsedUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
-        });
+        setUser(parseStoredUser(storedUser));
         setIsGuest(false);
         localStorage.removeItem("guest");
         validateToken(storedToken);
@@ -114,12 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedGuest === "true" && storedUser) {
       try {
-        const guestUser = JSON.parse(storedUser) as Partial<User>;
-        setUser({
-          id: guestUser.id ?? 0,
-          username: guestUser.username ?? generateGuestName(),
-          avatarColor: guestUser.avatarColor ?? DEFAULT_AVATAR_COLOR,
-        });
+        setUser(parseStoredUser(storedUser));
         setIsGuest(true);
         setIsLoading(false);
         return;
@@ -132,6 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(false);
   }, [validateToken]);
+
+  function persistUser(nextUser: User) {
+    setUser(nextUser);
+    localStorage.setItem("user", JSON.stringify(nextUser));
+  }
 
   const login = async (
     username: string,
@@ -149,11 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (data.success) {
-        setUser(data.user);
+        persistUser(data.user);
         setToken(data.token);
         setIsGuest(false);
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("guest");
         toast.success("Login successful!");
         return true;
@@ -183,11 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (data.success) {
-        setUser(data.user);
+        persistUser(data.user);
         setToken(data.token);
         setIsGuest(false);
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("guest");
         toast.success("Registration successful!");
         return true;
@@ -207,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: 0,
       username: normalizedUsername || generateGuestName(),
       avatarColor: DEFAULT_AVATAR_COLOR,
+      avatarUrl: null,
     };
     setUser(guestUser);
     setToken(null);
@@ -236,8 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const updatedGuestUser = { ...user, avatarColor };
-      setUser(updatedGuestUser);
-      localStorage.setItem("user", JSON.stringify(updatedGuestUser));
+      persistUser(updatedGuestUser);
       return true;
     }
 
@@ -258,8 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      persistUser(data.user);
       return true;
     } catch (error) {
       toast.error("Network error. Please try again.");
@@ -268,11 +273,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const uploadAvatar = async (file: File): Promise<boolean> => {
+    if (!user || isGuest) {
+      toast.error("Guests can't upload avatars");
+      return false;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.set("avatar", file);
+
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!(data.success && data.user)) {
+        toast.error(data.message || "Failed to upload avatar");
+        return false;
+      }
+
+      persistUser(data.user);
+      return true;
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+      console.error("Upload avatar error:", error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
     isLoading,
-    isAuthenticated: !!user && !isGuest,
+    isAuthenticated: Boolean(user) && !isGuest,
     isGuest,
     login,
     register,
@@ -280,6 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginAsGuest,
     getProfileData,
     updateAvatarColor,
+    uploadAvatar,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);

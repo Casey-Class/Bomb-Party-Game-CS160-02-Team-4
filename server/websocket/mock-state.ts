@@ -56,13 +56,18 @@ export function createPlayer(
   playerCount: number,
   userId: number | null,
   startingLives: number,
+  avatarColor?: string,
+  avatarUrl?: string | null,
 ): PlayerDto {
   return {
     id: clientId,
     name: playerName || `Player ${playerCount}`,
     userId,
-    avatarUrl: null,
-    avatarColor: AVATAR_COLORS[(playerCount - 1) % AVATAR_COLORS.length] ?? "#607d8b",
+    avatarUrl: avatarUrl ?? null,
+    avatarColor:
+      avatarColor ??
+      AVATAR_COLORS[(playerCount - 1) % AVATAR_COLORS.length] ??
+      "#607d8b",
     lives: startingLives,
     maxLives: startingLives,
     score: 0,
