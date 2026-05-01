@@ -98,7 +98,9 @@ export function HomePage() {
               className="h-11 border-white/10 bg-zinc-800/80 text-white placeholder:text-white/30"
               maxLength={6}
               onChange={(event) =>
-                setRoomCode(event.target.value.replace(/\s+/g, "").toUpperCase())
+                setRoomCode(
+                  event.target.value.replace(/\s+/g, "").toUpperCase()
+                )
               }
               placeholder="Room code"
               value={roomCode}

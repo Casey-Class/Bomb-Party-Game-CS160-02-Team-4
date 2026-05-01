@@ -48,6 +48,14 @@ export function GameSettingsPanel({
   settings,
 }: GameSettingsProps) {
   const [copied, setCopied] = useState(false);
+  let settingsMessage = "Only the room host can change these settings.";
+
+  if (canEdit) {
+    settingsMessage =
+      "You can change these while the room is still in the lobby.";
+  } else if (isHost) {
+    settingsMessage = "Settings lock as soon as the game starts.";
+  }
 
   function copyRoomCode() {
     navigator.clipboard.writeText(settings.roomCode);
@@ -137,15 +145,14 @@ export function GameSettingsPanel({
         </CardHeader>
         <CardContent className="px-3 pb-3">
           <div className="mb-3 rounded-lg border border-white/10 bg-zinc-900/40 px-3 py-2 text-white/55 text-xs">
-            {canEdit
-              ? "You can change these while the room is still in the lobby."
-              : isHost
-                ? "Settings lock as soon as the game starts."
-                : "Only the room host can change these settings."}
+            {settingsMessage}
           </div>
           <FieldGroup className="mb-4 grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel className="text-white/65 text-xs" htmlFor="turn-time-select">
+              <FieldLabel
+                className="text-white/65 text-xs"
+                htmlFor="turn-time-select"
+              >
                 Time per Turn
               </FieldLabel>
               <FieldContent>
