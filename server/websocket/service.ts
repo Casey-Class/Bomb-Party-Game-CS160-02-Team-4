@@ -68,11 +68,17 @@ export class WebSocketGameService {
       playerName,
       this.snapshot.players.length + 1,
       userId,
+      this.snapshot.gameSettings.startingLives,
     );
 
     this.snapshot = {
       ...this.snapshot,
       players: [...this.snapshot.players, player],
+      gameSettings: {
+        ...this.snapshot.gameSettings,
+        hostPlayerId:
+          this.snapshot.gameSettings.hostPlayerId || player.id,
+      },
       chatMessages: [
         ...this.snapshot.chatMessages,
         this.createSystemMessage(`${player.name} joined the room.`),
@@ -158,6 +164,13 @@ export class WebSocketGameService {
         ...player,
         isActive: nextStatus === "playing" && !player.isEliminated && player.id === currentPlayerId,
       })),
+      gameSettings: {
+        ...this.snapshot.gameSettings,
+        hostPlayerId:
+          this.snapshot.gameSettings.hostPlayerId === playerId
+            ? (players[0]?.id ?? "")
+            : this.snapshot.gameSettings.hostPlayerId,
+      },
       gameState: {
         ...this.snapshot.gameState,
         currentPlayerId,
@@ -196,6 +209,12 @@ export class WebSocketGameService {
         return this.handleSubmitWord(playerId, event.payload.word);
       case "send_chat":
         return this.handleSendChat(playerId, event.payload.text);
+      case "update_settings":
+        return this.handleUpdateSettings(
+          playerId,
+          event.payload.timePerTurn,
+          event.payload.startingLives,
+        );
       default:
         return {
           type: "error",
@@ -452,6 +471,84 @@ export class WebSocketGameService {
       ...this.snapshot,
       chatMessages: [...this.snapshot.chatMessages, this.createChatMessage(author, trimmedText)],
     };
+
+    return {
+      type: "state_sync",
+      payload: this.getSnapshot(),
+    };
+  }
+
+  private handleUpdateSettings(
+    playerId: string,
+    timePerTurn: number,
+    startingLives: number,
+  ): ServerEvent {
+    const player = this.resolvePlayer(playerId);
+
+    if (!player) {
+      return {
+        type: "error",
+        payload: { message: "Player not found" },
+      };
+    }
+
+    if (playerId !== this.snapshot.gameSettings.hostPlayerId) {
+      return {
+        type: "error",
+        payload: { message: "Only the room host can change settings" },
+      };
+    }
+
+    if (this.snapshot.gameState.status !== "waiting") {
+      return {
+        type: "error",
+        payload: { message: "Settings can only be changed in the lobby" },
+      };
+    }
+
+    const nextTimePerTurn = Math.trunc(timePerTurn);
+    const nextStartingLives = Math.trunc(startingLives);
+
+    if (!Number.isFinite(nextTimePerTurn) || nextTimePerTurn < 5 || nextTimePerTurn > 120) {
+      return {
+        type: "error",
+        payload: { message: "Time per turn must be between 5 and 120 seconds" },
+      };
+    }
+
+    if (!Number.isFinite(nextStartingLives) || nextStartingLives < 1 || nextStartingLives > 10) {
+      return {
+        type: "error",
+        payload: { message: "Starting lives must be between 1 and 10" },
+      };
+    }
+
+    this.snapshot = {
+      ...this.snapshot,
+      players: this.snapshot.players.map((candidate) => ({
+        ...candidate,
+        lives: nextStartingLives,
+        maxLives: nextStartingLives,
+        isEliminated: false,
+        isActive: false,
+        currentWord: null,
+      })),
+      gameSettings: {
+        ...this.snapshot.gameSettings,
+        timePerTurn: nextTimePerTurn,
+        startingLives: nextStartingLives,
+      },
+      gameState: {
+        ...this.snapshot.gameState,
+        timeLeft: nextTimePerTurn,
+        maxTime: nextTimePerTurn,
+        currentPlayerId: "",
+        winnerId: null,
+      },
+    };
+    this.appendSystemMessage(
+      `${player.name} updated the room settings: ${nextTimePerTurn}s, ${nextStartingLives} lives.`,
+    );
 
     return {
       type: "state_sync",

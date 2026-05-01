@@ -14,6 +14,7 @@ const AVATAR_COLORS = [
 ];
 
 const TIME_PER_TURN = 15;
+const STARTING_LIVES = 3;
 
 export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
   return {
@@ -38,9 +39,10 @@ export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
       },
     ],
     gameSettings: {
+      hostPlayerId: "",
       maxPlayers: 20,
       timePerTurn: TIME_PER_TURN,
-      startingLives: 3,
+      startingLives: STARTING_LIVES,
       minWordLength: 3,
       roomCode,
       isPublic: true,
@@ -53,6 +55,7 @@ export function createPlayer(
   playerName: string,
   playerCount: number,
   userId: number | null,
+  startingLives: number,
 ): PlayerDto {
   return {
     id: clientId,
@@ -60,8 +63,8 @@ export function createPlayer(
     userId,
     avatarUrl: null,
     avatarColor: AVATAR_COLORS[(playerCount - 1) % AVATAR_COLORS.length] ?? "#607d8b",
-    lives: 3,
-    maxLives: 3,
+    lives: startingLives,
+    maxLives: startingLives,
     score: 0,
     isActive: false,
     isEliminated: false,

@@ -33,6 +33,7 @@ export interface ChatMessageDto {
 }
 
 export interface GameSettingsDto {
+  hostPlayerId: string;
   maxPlayers: number;
   timePerTurn: number;
   startingLives: number;
@@ -63,6 +64,10 @@ export type ClientEvent =
   | {
       type: "send_chat";
       payload: { text: string };
+    }
+  | {
+      type: "update_settings";
+      payload: { timePerTurn: number; startingLives: number };
     };
 
 export type ServerEvent =

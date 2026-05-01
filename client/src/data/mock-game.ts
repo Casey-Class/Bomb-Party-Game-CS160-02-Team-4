@@ -32,6 +32,7 @@ export interface ChatMessage {
 }
 
 export interface GameSettings {
+  hostPlayerId: string;
   isPublic: boolean;
   maxPlayers: number;
   minWordLength: number;
@@ -274,6 +275,7 @@ export const mockChatMessages: ChatMessage[] = [
 ];
 
 export const mockGameSettings: GameSettings = {
+  hostPlayerId: "",
   maxPlayers: 20,
   timePerTurn: 3,
   startingLives: 3,

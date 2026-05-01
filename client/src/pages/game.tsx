@@ -58,6 +58,7 @@ export function GamePage() {
     sendTypingWord,
     sendWord,
     sendChat,
+    updateSettings,
   } = useGameSocket(roomId.toUpperCase(), playerName, localPlayerId, token);
   const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId);
   const localPlayer = players.find((p) => p.id === localPlayerId);
@@ -67,6 +68,8 @@ export function GamePage() {
   const connectionStatusColor = getConnectionStatusColor(connectionStatus);
   const typedWord = localPlayer?.currentWord ?? "";
   const canStart = connectedPlayerCount >= 2 && gameState.status !== "playing";
+  const isHost = gameSettings.hostPlayerId === localPlayerId;
+  const canEditSettings = isHost && gameState.status === "waiting";
 
   const activePlayerIndex = players.findIndex(
     (p) => p.id === gameState.currentPlayerId
@@ -225,7 +228,12 @@ export function GamePage() {
             <GameChat messages={chatMessages} onSendMessage={sendChat} />
           </TabsContent>
           <TabsContent className="m-0 min-h-0 flex-1 overflow-auto" value="settings">
-            <GameSettingsPanel settings={gameSettings} />
+            <GameSettingsPanel
+              canEdit={canEditSettings}
+              isHost={isHost}
+              onUpdateSettings={updateSettings}
+              settings={gameSettings}
+            />
           </TabsContent>
         </Tabs>
       </div>

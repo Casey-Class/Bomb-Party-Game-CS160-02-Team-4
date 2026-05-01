@@ -33,7 +33,11 @@ type ClientEvent =
   | { type: "start_game" }
   | { type: "typing_word"; payload: { word: string } }
   | { type: "submit_word"; payload: { word: string } }
-  | { type: "send_chat"; payload: { text: string } };
+  | { type: "send_chat"; payload: { text: string } }
+  | {
+      type: "update_settings";
+      payload: { startingLives: number; timePerTurn: number };
+    };
 
 interface GameConnectionState {
   chatMessages: ChatMessage[];
@@ -47,6 +51,10 @@ interface GameConnectionState {
   sendTypingWord: (word: string) => void;
   sendWord: (word: string) => void;
   startGame: () => void;
+  updateSettings: (settings: {
+    startingLives: number;
+    timePerTurn: number;
+  }) => void;
 }
 
 interface GameDataState {
@@ -190,6 +198,9 @@ export function useGameSocket(
     },
     sendChat(text: string) {
       send({ type: "send_chat", payload: { text } });
+    },
+    updateSettings(settings) {
+      send({ type: "update_settings", payload: settings });
     },
   };
 }
