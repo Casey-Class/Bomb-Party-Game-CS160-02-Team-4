@@ -130,16 +130,29 @@ export function useGameSocket(
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    setConnectionStatus("connecting");
+    setClientId(null);
+
     const socket = new WebSocket(
       getSocketUrl({ roomId, playerName, playerId, token })
     );
     socketRef.current = socket;
 
-    socket.addEventListener("open", () => {
-      setConnectionStatus("connected");
-    });
+    const isCurrentSocket = () => socketRef.current === socket;
 
-    socket.addEventListener("message", (event) => {
+    const handleOpen = () => {
+      if (!isCurrentSocket()) {
+        return;
+      }
+
+      setConnectionStatus("connected");
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      if (!isCurrentSocket()) {
+        return;
+      }
+
       const parsed = JSON.parse(event.data) as ServerEvent;
 
       if (parsed.type === "connected") {
@@ -156,19 +169,39 @@ export function useGameSocket(
         toast.error(parsed.payload.message);
         console.error(parsed.payload.message);
       }
-    });
+    };
 
-    socket.addEventListener("close", () => {
-      setConnectionStatus("disconnected");
-    });
+    const handleClose = () => {
+      if (!isCurrentSocket()) {
+        return;
+      }
 
-    socket.addEventListener("error", () => {
       setConnectionStatus("disconnected");
-    });
+    };
+
+    const handleError = () => {
+      if (!isCurrentSocket()) {
+        return;
+      }
+
+      setConnectionStatus("disconnected");
+    };
+
+    socket.addEventListener("open", handleOpen);
+    socket.addEventListener("message", handleMessage);
+    socket.addEventListener("close", handleClose);
+    socket.addEventListener("error", handleError);
 
     return () => {
+      socket.removeEventListener("open", handleOpen);
+      socket.removeEventListener("message", handleMessage);
+      socket.removeEventListener("close", handleClose);
+      socket.removeEventListener("error", handleError);
       socket.close();
-      socketRef.current = null;
+
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
     };
   }, [playerId, playerName, roomId, token]);
 
