@@ -1,6 +1,7 @@
 export interface PlayerDto {
   id: string;
   name: string;
+  userId: number | null;
   avatarUrl: string | null;
   avatarColor: string;
   lives: number;
@@ -79,6 +80,8 @@ export type ServerEvent =
     };
 
 export interface SocketData {
+  authUserId: number | null;
+  authUsername: string | null;
   clientId: string;
   playerId: string;
   playerName: string;

@@ -13,13 +13,15 @@ const AVATAR_COLORS = [
   "#8bc34a",
 ];
 
+const TIME_PER_TURN = 15;
+
 export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
   return {
     players: [],
     gameState: {
       currentSyllable: "OGI",
-      timeLeft: 15,
-      maxTime: 15,
+      timeLeft: TIME_PER_TURN,
+      maxTime: TIME_PER_TURN,
       round: 0,
       currentPlayerId: "",
       winnerId: null,
@@ -37,7 +39,7 @@ export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
     ],
     gameSettings: {
       maxPlayers: 20,
-      timePerTurn: 15,
+      timePerTurn: TIME_PER_TURN,
       startingLives: 3,
       minWordLength: 3,
       roomCode,
@@ -46,10 +48,16 @@ export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
   };
 }
 
-export function createPlayer(clientId: string, playerName: string, playerCount: number): PlayerDto {
+export function createPlayer(
+  clientId: string,
+  playerName: string,
+  playerCount: number,
+  userId: number | null,
+): PlayerDto {
   return {
     id: clientId,
     name: playerName || `Player ${playerCount}`,
+    userId,
     avatarUrl: null,
     avatarColor: AVATAR_COLORS[(playerCount - 1) % AVATAR_COLORS.length] ?? "#607d8b",
     lives: 3,

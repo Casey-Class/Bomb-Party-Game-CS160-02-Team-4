@@ -57,3 +57,11 @@ export function getStoredPlayerId() {
 
   return nextPlayerId;
 }
+
+export function getSocketPlayerId(userId?: number | null) {
+  if (typeof userId === "number" && Number.isFinite(userId) && userId > 0) {
+    return `user-${userId}`;
+  }
+
+  return getStoredPlayerId();
+}

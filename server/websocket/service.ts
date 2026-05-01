@@ -1,4 +1,5 @@
 import { createInitialSnapshot, createPlayer } from "./mock-state";
+import { recordCompletedGameForUsers } from "../lib/auth";
 import { getRandomSyllable, isValidDictionaryWord } from "../words/dictionary";
 import type {
   ChatMessageDto,
@@ -21,6 +22,7 @@ interface TurnUpdateOptions {
 
 export class WebSocketGameService {
   private snapshot: GameSnapshotDto;
+  private hasRecordedCurrentGame = false;
   private readonly usedWords = new Set<string>();
 
   public constructor(private readonly roomId: string) {
@@ -31,7 +33,11 @@ export class WebSocketGameService {
     return structuredClone(this.snapshot);
   }
 
-  public connectPlayer(playerId: string, playerName: string): GameSnapshotDto {
+  public connectPlayer(
+    playerId: string,
+    playerName: string,
+    userId: number | null,
+  ): GameSnapshotDto {
     const existingPlayer = this.resolvePlayer(playerId);
     const nextPlayerName = playerName.trim();
 
@@ -43,6 +49,7 @@ export class WebSocketGameService {
             ? {
                 ...player,
                 name: nextPlayerName || player.name,
+                userId,
                 isConnected: true,
               }
             : player,
@@ -56,7 +63,12 @@ export class WebSocketGameService {
       return this.getSnapshot();
     }
 
-    const player = createPlayer(playerId, playerName, this.snapshot.players.length + 1);
+    const player = createPlayer(
+      playerId,
+      playerName,
+      this.snapshot.players.length + 1,
+      userId,
+    );
 
     this.snapshot = {
       ...this.snapshot,
@@ -281,6 +293,7 @@ export class WebSocketGameService {
       },
     };
     this.usedWords.clear();
+    this.hasRecordedCurrentGame = false;
     this.appendSystemMessage(`${player.name} started the game.`);
 
     return {
@@ -522,6 +535,8 @@ export class WebSocketGameService {
   private createEndedSnapshot(players: PlayerDto[], winnerId: string | null) {
     const winner = winnerId ? players.find((player) => player.id === winnerId) : undefined;
 
+    this.recordCompletedGame(players, winner?.userId ?? null);
+
     return {
       ...this.snapshot,
       players: players.map((player) => ({
@@ -635,6 +650,28 @@ export class WebSocketGameService {
 
   private resolvePlayer(playerId: string): PlayerDto | undefined {
     return this.snapshot.players.find((player) => player.id === playerId);
+  }
+
+  private recordCompletedGame(players: PlayerDto[], winnerUserId: number | null) {
+    if (this.hasRecordedCurrentGame) {
+      return;
+    }
+
+    this.hasRecordedCurrentGame = true;
+
+    if (players.length === 0) {
+      return;
+    }
+
+    recordCompletedGameForUsers({
+      winnerUserId,
+      participants: players.map((player) => ({
+        playerId: player.id,
+        playerName: player.name,
+        userId: player.userId,
+      })),
+      finishedAt: new Date().toISOString(),
+    });
   }
 
   private appendSystemMessage(text: string) {

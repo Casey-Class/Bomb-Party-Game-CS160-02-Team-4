@@ -88,3 +88,57 @@ export async function updateUserAvatarColor(
     return null;
   }
 }
+
+interface CompletedGameParticipant {
+  playerId: string;
+  playerName: string;
+  userId: number | null;
+}
+
+export function recordCompletedGameForUsers({
+  finishedAt,
+  participants,
+  winnerUserId,
+}: {
+  finishedAt: string;
+  participants: CompletedGameParticipant[];
+  winnerUserId: number | null;
+}) {
+  const uniqueParticipants = [
+    ...new Map(
+      participants.map((participant) => [participant.playerId, participant]),
+    ).values(),
+  ];
+
+  if (uniqueParticipants.length === 0) {
+    return;
+  }
+
+  const insertGame = db.prepare(`
+    INSERT INTO games (winner_user_id, finished_at)
+    VALUES (?, ?)
+    RETURNING id
+  `);
+  const insertParticipant = db.prepare(`
+    INSERT INTO game_participants (game_id, player_id, player_name, user_id)
+    VALUES (?, ?, ?, ?)
+  `);
+  db.transaction(() => {
+    const createdGame = insertGame.get(winnerUserId, finishedAt) as
+      | { id: number }
+      | undefined;
+
+    if (!createdGame) {
+      throw new Error("Failed to create completed game record");
+    }
+
+    for (const participant of uniqueParticipants) {
+      insertParticipant.run(
+        createdGame.id,
+        participant.playerId,
+        participant.playerName,
+        participant.userId,
+      );
+    }
+  })();
+}

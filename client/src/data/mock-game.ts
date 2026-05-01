@@ -199,7 +199,7 @@ export const mockPlayers: Player[] = [
 export const mockGameState: GameState = {
   currentSyllable: "OGI",
   timeLeft: 7,
-  maxTime: 15,
+  maxTime: 3,
   round: 4,
   currentPlayerId: "p5",
   winnerId: null,
@@ -275,7 +275,7 @@ export const mockChatMessages: ChatMessage[] = [
 
 export const mockGameSettings: GameSettings = {
   maxPlayers: 20,
-  timePerTurn: 15,
+  timePerTurn: 3,
   startingLives: 3,
   minWordLength: 3,
   roomCode: "BOMB-42X",

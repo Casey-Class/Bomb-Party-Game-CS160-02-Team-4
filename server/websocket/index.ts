@@ -1,4 +1,5 @@
 import type { ServerWebSocket } from "bun";
+import { verifyToken } from "../lib/jwt";
 import { WebSocketGameService } from "./service";
 import type { ServerEvent, SocketData } from "./types";
 import "../db/init";
@@ -106,8 +107,12 @@ function broadcast(roomId: string, event: ServerEvent) {
 export function handleWebSocketUpgrade(req: Request, server: Bun.Server<SocketData>) {
   const url = new URL(req.url);
   const roomId = url.searchParams.get("roomId")?.trim().toUpperCase();
-  const playerName = url.searchParams.get("playerName")?.trim() || "Player";
-  const playerId = url.searchParams.get("playerId")?.trim();
+  const requestedPlayerName = url.searchParams.get("playerName")?.trim() || "Player";
+  const requestedPlayerId = url.searchParams.get("playerId")?.trim();
+  const token = url.searchParams.get("token")?.trim() || null;
+  const payload = token ? verifyToken(token) : null;
+  const playerId = payload ? `user-${payload.userId}` : requestedPlayerId;
+  const playerName = payload?.username?.trim() || requestedPlayerName;
 
   if (!roomId || !playerId) {
     return false;
@@ -115,6 +120,8 @@ export function handleWebSocketUpgrade(req: Request, server: Bun.Server<SocketDa
 
   return server.upgrade(req, {
     data: {
+      authUserId: payload?.userId ?? null,
+      authUsername: payload?.username ?? null,
       clientId: `client-${Math.floor(Math.random() * 1_000_000)}`,
       playerId,
       playerName,
@@ -125,7 +132,7 @@ export function handleWebSocketUpgrade(req: Request, server: Bun.Server<SocketDa
 
 export const websocket = {
   open(ws: ServerWebSocket<SocketData>) {
-    const { playerId, playerName, roomId } = ws.data;
+    const { authUserId, playerId, playerName, roomId } = ws.data;
     getRoomClients(roomId).add(ws);
     clearDisconnectCleanup(roomId, playerId);
     ensureRoomTicker(roomId);
@@ -137,7 +144,11 @@ export const websocket = {
 
     broadcast(roomId, {
       type: "state_sync",
-      payload: getRoomService(roomId).connectPlayer(playerId, playerName),
+      payload: getRoomService(roomId).connectPlayer(
+        playerId,
+        playerName,
+        authUserId,
+      ),
     });
   },
 
@@ -182,4 +193,3 @@ export const websocket = {
     cleanupRoom(roomId);
   },
 };
-

@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 interface ProfileStats {
   bestStreak: number;
   gamesPlayed: number;
+  losses: number;
   winRate: number;
   wins: number;
 }
@@ -24,7 +25,9 @@ interface ProfileResponse {
   stats?: ProfileStats;
   success?: boolean;
   user?: {
+    createdAt?: string | null;
     id: number;
+    lastGameAt?: string | null;
     username: string;
     avatarColor: string;
   };
@@ -42,6 +45,7 @@ const AVATAR_COLORS = [
 const EMPTY_STATS: ProfileStats = {
   gamesPlayed: 0,
   wins: 0,
+  losses: 0,
   winRate: 0,
   bestStreak: 0,
 };
@@ -60,6 +64,12 @@ export function ProfilePage() {
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
     : "?";
+  const memberSince = data?.user?.createdAt
+    ? new Date(data.user.createdAt).toLocaleDateString()
+    : "Unknown";
+  const lastPlayed = data?.user?.lastGameAt
+    ? new Date(data.user.lastGameAt).toLocaleString()
+    : "No games recorded";
 
   useEffect(() => {
     if (!user?.username) {
@@ -153,7 +163,7 @@ export function ProfilePage() {
             <p className="font-bold text-lg text-white">
               {user?.username ?? "Guest"}
             </p>
-            <p className="text-white/40 text-xs">Member since March 2025</p>
+            <p className="text-white/40 text-xs">Member since {memberSince}</p>
           </div>
         </CardContent>
       </Card>
@@ -195,6 +205,21 @@ export function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-white/10 bg-zinc-800/80">
+        <CardContent className="flex items-center justify-between gap-4 pt-6 pb-6">
+          <div>
+            <p className="font-bold text-sm text-white">Record</p>
+            <p className="text-white/40 text-xs">
+              {stats.wins}W - {stats.losses}L
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-sm text-white">Last played</p>
+            <p className="text-white/40 text-xs">{lastPlayed}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-white/10 bg-zinc-800/80">
         <CardHeader className="pb-2">

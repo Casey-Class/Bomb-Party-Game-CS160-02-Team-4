@@ -8,7 +8,6 @@ import {
   mockGameState,
   type Player,
 } from "@/data/mock-game";
-import { getStoredPlayerId } from "@/lib/player-identity";
 
 interface ChatMessageDto {
   author: string;
@@ -70,14 +69,31 @@ const fallbackState: GameDataState = {
   gameSettings: mockGameSettings,
 };
 
-function getSocketUrl(roomId: string, playerName: string, playerId: string) {
+function getSocketUrl({
+  roomId,
+  playerName,
+  playerId,
+  token,
+}: {
+  roomId: string;
+  playerName: string;
+  playerId: string;
+  token: string | null;
+}) {
   const query = new URLSearchParams({
     roomId,
     playerName,
     playerId,
   });
+
+  if (token) {
+    query.set("token", token);
+  }
+
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
+  const host = import.meta.env.DEV
+    ? `${window.location.hostname}:5555`
+    : window.location.host;
   return `${protocol}//${host}/ws?${query.toString()}`;
 }
 
@@ -95,18 +111,19 @@ function hydrateSnapshot(snapshot: GameSnapshotDto) {
 
 export function useGameSocket(
   roomId: string,
-  playerName: string
+  playerName: string,
+  playerId: string,
+  token: string | null
 ): GameConnectionState {
   const [gameData, setGameData] = useState(fallbackState);
   const [connectionStatus, setConnectionStatus] =
     useState<GameConnectionState["connectionStatus"]>("connecting");
   const [clientId, setClientId] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
-  const playerIdRef = useRef(getStoredPlayerId());
 
   useEffect(() => {
     const socket = new WebSocket(
-      getSocketUrl(roomId, playerName, playerIdRef.current)
+      getSocketUrl({ roomId, playerName, playerId, token })
     );
     socketRef.current = socket;
 
@@ -145,7 +162,7 @@ export function useGameSocket(
       socket.close();
       socketRef.current = null;
     };
-  }, [playerName, roomId]);
+  }, [playerId, playerName, roomId, token]);
 
   function send(event: ClientEvent) {
     const socket = socketRef.current;
@@ -161,7 +178,7 @@ export function useGameSocket(
     ...gameData,
     connectionStatus,
     clientId,
-    playerId: playerIdRef.current,
+    playerId,
     startGame() {
       send({ type: "start_game" });
     },

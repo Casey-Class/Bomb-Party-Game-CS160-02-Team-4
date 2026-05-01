@@ -19,8 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 import { useGameSocket } from "@/lib/game-socket";
-import { getStoredPlayerId, getStoredPlayerName } from "@/lib/player-identity";
+import { getSocketPlayerId, getStoredPlayerName } from "@/lib/player-identity";
 
 function getActivePlayerAngle(playerCount: number, activePlayerIndex: number) {
   if (activePlayerIndex < 0 || playerCount === 0) {
@@ -43,8 +44,9 @@ function getConnectionStatusColor(connectionStatus: string) {
 export function GamePage() {
   const [copiedRoomCode, setCopiedRoomCode] = useState(false);
   const { roomId = "" } = useParams();
-  const playerName = getStoredPlayerName();
-  const localPlayerId = getStoredPlayerId();
+  const { user, token } = useAuth();
+  const playerName = user?.username ?? getStoredPlayerName();
+  const localPlayerId = getSocketPlayerId(user?.id);
   const {
     players,
     gameState,
@@ -56,7 +58,7 @@ export function GamePage() {
     sendTypingWord,
     sendWord,
     sendChat,
-  } = useGameSocket(roomId.toUpperCase(), playerName);
+  } = useGameSocket(roomId.toUpperCase(), playerName, localPlayerId, token);
   const currentPlayer = players.find((p) => p.id === gameState.currentPlayerId);
   const localPlayer = players.find((p) => p.id === localPlayerId);
   const winner = players.find((p) => p.id === gameState.winnerId);
