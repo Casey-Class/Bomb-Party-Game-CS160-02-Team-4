@@ -227,6 +227,7 @@ export class WebSocketGameService {
           playerId,
           event.payload.timePerTurn,
           event.payload.startingLives,
+          event.payload.demoMode,
         );
       default:
         return {
@@ -316,7 +317,7 @@ export class WebSocketGameService {
       gameState: {
         ...this.snapshot.gameState,
         currentPlayerId: startingPlayer.id,
-        currentSyllable: getRandomSyllable(),
+        currentSyllable: getRandomSyllable(this.snapshot.gameSettings.demoMode),
         timeLeft: this.snapshot.gameSettings.timePerTurn,
         maxTime: this.snapshot.gameSettings.timePerTurn,
         round: 1,
@@ -495,6 +496,7 @@ export class WebSocketGameService {
     playerId: string,
     timePerTurn: number,
     startingLives: number,
+    demoMode: boolean,
   ): ServerEvent {
     const player = this.resolvePlayer(playerId);
 
@@ -521,6 +523,7 @@ export class WebSocketGameService {
 
     const nextTimePerTurn = Math.trunc(timePerTurn);
     const nextStartingLives = Math.trunc(startingLives);
+    const nextDemoMode = Boolean(demoMode);
 
     if (!Number.isFinite(nextTimePerTurn) || nextTimePerTurn < 5 || nextTimePerTurn > 120) {
       return {
@@ -548,6 +551,7 @@ export class WebSocketGameService {
       })),
       gameSettings: {
         ...this.snapshot.gameSettings,
+        demoMode: nextDemoMode,
         timePerTurn: nextTimePerTurn,
         startingLives: nextStartingLives,
       },
@@ -560,7 +564,7 @@ export class WebSocketGameService {
       },
     };
     this.appendSystemMessage(
-      `${player.name} updated the room settings: ${nextTimePerTurn}s, ${nextStartingLives} lives.`,
+      `${player.name} updated the room settings: ${nextTimePerTurn}s, ${nextStartingLives} lives, demo mode ${nextDemoMode ? "on" : "off"}.`,
     );
 
     return {
@@ -739,7 +743,7 @@ export class WebSocketGameService {
       gameState: {
         ...this.snapshot.gameState,
         currentPlayerId,
-        currentSyllable: getRandomSyllable(),
+        currentSyllable: getRandomSyllable(this.snapshot.gameSettings.demoMode),
         timeLeft: this.snapshot.gameSettings.timePerTurn,
         maxTime: this.snapshot.gameSettings.timePerTurn,
         round: didWrap ? this.snapshot.gameState.round + 1 : this.snapshot.gameState.round,

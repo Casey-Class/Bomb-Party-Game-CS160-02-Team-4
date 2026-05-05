@@ -40,6 +40,7 @@ export function createInitialSnapshot(roomCode: string): GameSnapshotDto {
     ],
     gameSettings: {
       hostPlayerId: "",
+      demoMode: false,
       maxPlayers: 20,
       timePerTurn: TIME_PER_TURN,
       startingLives: STARTING_LIVES,

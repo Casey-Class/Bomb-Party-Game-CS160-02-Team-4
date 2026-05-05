@@ -5,6 +5,7 @@ import {
   Globe,
   Heart,
   Lock,
+  Sparkles,
   Type,
   Users,
 } from "lucide-react";
@@ -26,12 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type { GameSettings } from "@/data/mock-game";
 
 interface GameSettingsProps {
   canEdit: boolean;
   isHost: boolean;
   onUpdateSettings: (settings: {
+    demoMode: boolean;
     startingLives: number;
     timePerTurn: number;
   }) => void;
@@ -65,6 +68,7 @@ export function GameSettingsPanel({
 
   function handleTimePerTurnChange(value: string) {
     onUpdateSettings({
+      demoMode: settings.demoMode,
       timePerTurn: Number(value),
       startingLives: settings.startingLives,
     });
@@ -72,8 +76,17 @@ export function GameSettingsPanel({
 
   function handleStartingLivesChange(value: string) {
     onUpdateSettings({
+      demoMode: settings.demoMode,
       timePerTurn: settings.timePerTurn,
       startingLives: Number(value),
+    });
+  }
+
+  function handleDemoModeChange(checked: boolean) {
+    onUpdateSettings({
+      demoMode: checked,
+      timePerTurn: settings.timePerTurn,
+      startingLives: settings.startingLives,
     });
   }
 
@@ -97,6 +110,11 @@ export function GameSettingsPanel({
       icon: Type,
       label: "Min Word Length",
       value: settings.minWordLength.toString(),
+    },
+    {
+      icon: Sparkles,
+      label: "Demo Mode",
+      value: settings.demoMode ? "On" : "Off",
     },
     {
       icon: settings.isPublic ? Globe : Lock,
@@ -205,6 +223,19 @@ export function GameSettingsPanel({
               </FieldContent>
             </Field>
           </FieldGroup>
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-white/10 bg-zinc-900/40 px-3 py-3">
+            <div className="flex items-center gap-2 text-white/70">
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <div>
+                <div className="font-medium text-sm">Demo Mode</div>
+              </div>
+            </div>
+            <Switch
+              checked={settings.demoMode}
+              disabled={!canEdit}
+              onCheckedChange={handleDemoModeChange}
+            />
+          </div>
           <div className="flex flex-col gap-2">
             {settingRows.map((row) => (
               <div

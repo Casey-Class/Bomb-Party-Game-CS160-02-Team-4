@@ -34,6 +34,7 @@ export interface ChatMessageDto {
 
 export interface GameSettingsDto {
   hostPlayerId: string;
+  demoMode: boolean;
   maxPlayers: number;
   timePerTurn: number;
   startingLives: number;
@@ -67,7 +68,7 @@ export type ClientEvent =
     }
   | {
       type: "update_settings";
-      payload: { timePerTurn: number; startingLives: number };
+      payload: { demoMode: boolean; timePerTurn: number; startingLives: number };
     };
 
 export type ServerEvent =

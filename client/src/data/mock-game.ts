@@ -32,6 +32,7 @@ export interface ChatMessage {
 }
 
 export interface GameSettings {
+  demoMode: boolean;
   hostPlayerId: string;
   isPublic: boolean;
   maxPlayers: number;
@@ -275,6 +276,7 @@ export const mockChatMessages: ChatMessage[] = [
 ];
 
 export const mockGameSettings: GameSettings = {
+  demoMode: false,
   hostPlayerId: "",
   maxPlayers: 20,
   timePerTurn: 3,

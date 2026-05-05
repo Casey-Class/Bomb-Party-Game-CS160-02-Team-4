@@ -36,7 +36,7 @@ type ClientEvent =
   | { type: "send_chat"; payload: { text: string } }
   | {
       type: "update_settings";
-      payload: { startingLives: number; timePerTurn: number };
+      payload: { demoMode: boolean; startingLives: number; timePerTurn: number };
     };
 
 interface GameConnectionState {
@@ -52,6 +52,7 @@ interface GameConnectionState {
   sendWord: (word: string) => void;
   startGame: () => void;
   updateSettings: (settings: {
+    demoMode: boolean;
     startingLives: number;
     timePerTurn: number;
   }) => void;

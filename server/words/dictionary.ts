@@ -14,6 +14,26 @@ function loadDictionary() {
 
 const dictionary = loadDictionary();
 const dictionaryWords = Array.from(dictionary).filter((word) => /^[A-Z]+$/.test(word) && word.length >= 3);
+const demoModeSyllables = [
+  "A",
+  "E",
+  "I",
+  "O",
+  "S",
+  "T",
+  "R",
+  "N",
+  "L",
+  "ING",
+  "ES",
+  "ED",
+  "ER",
+  "RE",
+  "IN",
+  "LY",
+  "AR",
+  "ST",
+];
 
 export function isValidDictionaryWord(word: string) {
   return dictionary.has(word);
@@ -23,7 +43,11 @@ export function getDictionarySize() {
   return dictionary.size;
 }
 
-export function getRandomSyllable() {
+export function getRandomSyllable(demoMode = false) {
+  if (demoMode) {
+    return demoModeSyllables[Math.floor(Math.random() * demoModeSyllables.length)] ?? "ING";
+  }
+
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const word = dictionaryWords[Math.floor(Math.random() * dictionaryWords.length)];
 
