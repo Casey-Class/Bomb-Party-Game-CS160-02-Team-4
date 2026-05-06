@@ -10,7 +10,7 @@ import { buildAbsoluteUrl } from "../lib/http";
 import {
   deleteAvatarFileByUrl,
   getAvatarUploadLimitBytes,
-  isSupportedAvatarMimeType,
+  resolveAvatarMimeType,
   saveAvatarFile,
 } from "../lib/uploads";
 
@@ -53,7 +53,7 @@ export const profileEndpoint = async (req: Request) => {
                 return Response.json({ success: false, message: "Avatar file is required" }, { status: 400 });
             }
 
-            if (!isSupportedAvatarMimeType(avatarFile.type)) {
+            if (!resolveAvatarMimeType(avatarFile)) {
                 return Response.json({ success: false, message: "Avatar must be PNG, JPG, WEBP, or GIF" }, { status: 400 });
             }
 

@@ -11,6 +11,15 @@ const MIME_TYPE_TO_EXTENSION: Record<string, string> = {
   "image/gif": ".gif",
 };
 
+/** Windows file pickers sometimes leave `File.type` empty; map from extension. */
+const EXTENSION_TO_MIME_TYPE: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
+
 function getFilenameFromUrl(avatarUrl: string | null) {
   if (!avatarUrl) {
     return null;
@@ -25,6 +34,16 @@ export function isSupportedAvatarMimeType(contentType: string) {
   return contentType in MIME_TYPE_TO_EXTENSION;
 }
 
+export function resolveAvatarMimeType(file: File): string | null {
+  if (isSupportedAvatarMimeType(file.type)) {
+    return file.type;
+  }
+
+  const ext = extname(file.name).toLowerCase();
+  const fromExt = EXTENSION_TO_MIME_TYPE[ext];
+  return fromExt ?? null;
+}
+
 export function getAvatarUploadLimitBytes() {
   return MAX_AVATAR_FILE_SIZE_BYTES;
 }
@@ -34,9 +53,9 @@ export async function ensureUploadDirectories() {
 }
 
 export async function saveAvatarFile(userId: number, file: File) {
-  const contentType = file.type;
+  const contentType = resolveAvatarMimeType(file);
 
-  if (!isSupportedAvatarMimeType(contentType)) {
+  if (!contentType) {
     throw new Error("Unsupported avatar file type");
   }
 

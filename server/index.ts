@@ -1,6 +1,6 @@
 import "./db/init";
 import { stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { registerEndpoint, loginEndpoint, validateEndpoint } from "./endpoints/auth";
 import { healthEndpoint } from "./endpoints/health";
 import { profileEndpoint } from "./endpoints/profile";
@@ -9,14 +9,20 @@ import { ensureUploadDirectories } from "./lib/uploads";
 import { getDictionarySize } from "./words/dictionary";
 import { handleWebSocketUpgrade, websocket } from "./websocket";
 
-const uploadRoot = join(import.meta.dir, "uploads");
+const uploadRoot = resolve(join(import.meta.dir, "uploads"));
 
 async function staticUploadHandler(req: Request) {
   const url = new URL(req.url);
   const relativePath = url.pathname.replace(/^\/uploads\//, "");
-  const filePath = resolve(uploadRoot, relativePath);
 
-  if (!filePath.startsWith(`${uploadRoot}/`) && filePath !== uploadRoot) {
+  if (!relativePath || relativePath.includes("\0")) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const filePath = resolve(uploadRoot, relativePath);
+  const pathInsideRoot = relative(uploadRoot, filePath);
+
+  if (pathInsideRoot.startsWith("..") || pathInsideRoot === "..") {
     return new Response("Not found", { status: 404 });
   }
 
