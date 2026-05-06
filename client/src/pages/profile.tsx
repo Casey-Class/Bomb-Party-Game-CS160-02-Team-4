@@ -3,9 +3,11 @@ import {
   ImagePlus,
   Percent,
   Swords,
+  Trash2,
   Trophy,
   ZoomIn,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router";
@@ -69,7 +71,11 @@ const EMPTY_STATS: ProfileStats = {
 };
 const DEFAULT_AVATAR_COLOR = AVATAR_COLORS[0]?.value ?? "#a855f7";
 const CROPPER_SIZE_PX = 320;
+/** Matches preview circle container `h-32 w-32` (128px) — must scale crop coords like the main cropper. */
+const CROP_PREVIEW_DISPLAY_PX = 128;
 const CROPPED_AVATAR_SIZE_PX = 512;
+const CROPPED_AVATAR_MIME_TYPE = "image/png";
+const AVATAR_FILENAME_EXTENSION_PATTERN = /\.[^/.]+$/;
 
 interface CropBounds {
   x: number;
@@ -79,6 +85,36 @@ interface CropBounds {
 interface ImageDimensions {
   height: number;
   width: number;
+}
+
+function getCropPreviewCircleStyle({
+  cropBounds,
+  cropPreviewUrl,
+  imageDimensions,
+  zoom,
+}: {
+  cropBounds: CropBounds;
+  cropPreviewUrl: string | null;
+  imageDimensions: ImageDimensions | null;
+  zoom: number;
+}): CSSProperties {
+  const cropPreviewScale = CROP_PREVIEW_DISPLAY_PX / CROPPER_SIZE_PX;
+
+  if (cropPreviewUrl && imageDimensions) {
+    return {
+      backgroundImage: `url(${cropPreviewUrl})`,
+      backgroundPosition: `${cropBounds.x * cropPreviewScale}px ${
+        cropBounds.y * cropPreviewScale
+      }px`,
+      backgroundSize: `${imageDimensions.width * zoom * cropPreviewScale}px ${
+        imageDimensions.height * zoom * cropPreviewScale
+      }px`,
+    };
+  }
+
+  return {
+    backgroundImage: cropPreviewUrl ? `url(${cropPreviewUrl})` : undefined,
+  };
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -190,25 +226,106 @@ async function createCroppedAvatarFile({
       }
 
       reject(new Error("Failed to create cropped avatar"));
-    }, file.type || "image/png");
+    }, CROPPED_AVATAR_MIME_TYPE);
   });
 
-  return new File([blob], file.name, {
-    type: blob.type || file.type || "image/png",
+  const safeBaseName =
+    file.name.replace(AVATAR_FILENAME_EXTENSION_PATTERN, "").trim() || "avatar";
+
+  return new File([blob], `${safeBaseName}.png`, {
+    type: CROPPED_AVATAR_MIME_TYPE,
     lastModified: Date.now(),
   });
 }
 
+function clearProfileAvatarUrl(currentData: ProfileResponse | null) {
+  if (!currentData?.user) {
+    return currentData;
+  }
+
+  return {
+    ...currentData,
+    user: {
+      ...currentData.user,
+      avatarUrl: null,
+    },
+  };
+}
+
+async function clearAvatarFromProfile({
+  avatarUrl,
+  clearAvatar,
+  isClearingAvatar,
+  isUploadingAvatar,
+  setData,
+  setIsClearingAvatar,
+}: {
+  avatarUrl: string | null;
+  clearAvatar: () => Promise<boolean>;
+  isClearingAvatar: boolean;
+  isUploadingAvatar: boolean;
+  setData: React.Dispatch<React.SetStateAction<ProfileResponse | null>>;
+  setIsClearingAvatar: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  if (!avatarUrl || isClearingAvatar || isUploadingAvatar) {
+    return;
+  }
+
+  setIsClearingAvatar(true);
+
+  const success = await clearAvatar();
+
+  if (success) {
+    setData(clearProfileAvatarUrl);
+    toast.success("Profile image cleared");
+  }
+
+  setIsClearingAvatar(false);
+}
+
+function isAvatarUploadDisabled({
+  isClearingAvatar,
+  isGuest,
+  isUploadingAvatar,
+}: {
+  isClearingAvatar: boolean;
+  isGuest: boolean;
+  isUploadingAvatar: boolean;
+}) {
+  return isGuest || isUploadingAvatar || isClearingAvatar;
+}
+
+function isAvatarClearDisabled({
+  avatarUrl,
+  isClearingAvatar,
+  isGuest,
+  isUploadingAvatar,
+}: {
+  avatarUrl: string | null;
+  isClearingAvatar: boolean;
+  isGuest: boolean;
+  isUploadingAvatar: boolean;
+}) {
+  return isGuest || !avatarUrl || isUploadingAvatar || isClearingAvatar;
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, getProfileData, updateAvatarColor, uploadAvatar, isGuest } =
-    useAuth();
+  const {
+    user,
+    clearAvatar,
+    getProfileData,
+    updateAvatarColor,
+    uploadAvatar,
+    isGuest,
+  } = useAuth();
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAvatarColor, setSelectedAvatarColor] = useState(
     user?.avatarColor ?? DEFAULT_AVATAR_COLOR
   );
   const [isSavingAvatarColor, setIsSavingAvatarColor] = useState(false);
+  const [isClearingAvatar, setIsClearingAvatar] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
@@ -482,6 +599,13 @@ export function ProfilePage() {
     );
   }
 
+  const cropPreviewCircleStyle = getCropPreviewCircleStyle({
+    cropBounds,
+    cropPreviewUrl,
+    imageDimensions,
+    zoom,
+  });
+
   return (
     <>
       <div className="mx-auto flex min-h-[calc(100svh-74px)] w-full max-w-6xl flex-col gap-6 px-6 py-8">
@@ -560,12 +684,40 @@ export function ProfilePage() {
                 />
                 <Button
                   className="h-11 w-full justify-center gap-2 bg-white text-black hover:bg-white/90"
-                  disabled={isGuest || isUploadingAvatar}
+                  disabled={isAvatarUploadDisabled({
+                    isClearingAvatar,
+                    isGuest,
+                    isUploadingAvatar,
+                  })}
                   onClick={() => fileInputRef.current?.click()}
                   type="button"
                 >
                   <ImagePlus className="h-4 w-4" />
                   {isUploadingAvatar ? "Uploading..." : "Upload and crop"}
+                </Button>
+                <Button
+                  className="h-11 w-full justify-center gap-2 border-white/10 bg-zinc-900/60 text-white hover:bg-zinc-900"
+                  disabled={isAvatarClearDisabled({
+                    avatarUrl,
+                    isClearingAvatar,
+                    isGuest,
+                    isUploadingAvatar,
+                  })}
+                  onClick={() => {
+                    clearAvatarFromProfile({
+                      avatarUrl,
+                      clearAvatar,
+                      isClearingAvatar,
+                      isUploadingAvatar,
+                      setData,
+                      setIsClearingAvatar,
+                    }).catch((error) => console.error(error));
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isClearingAvatar ? "Clearing..." : "Clear profile picture"}
                 </Button>
                 <p className="text-sm text-white/45">
                   Drag, zoom, and crop before saving. PNG, JPG, WEBP, GIF up to
@@ -695,7 +847,7 @@ export function ProfilePage() {
         }}
         open={isCropDialogOpen}
       >
-        <DialogContent className="max-w-3xl border-white/10 bg-zinc-900 p-0 text-white sm:max-w-3xl">
+        <DialogContent className="max-w-3xl overflow-hidden border-white/10 bg-zinc-900 p-0 text-white sm:max-w-3xl">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-white">Crop profile image</DialogTitle>
             <DialogDescription className="text-white/50">
@@ -706,7 +858,7 @@ export function ProfilePage() {
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="space-y-4">
               <div
-                className="relative mx-auto h-[320px] w-[320px] cursor-grab overflow-hidden rounded-[28px] border border-white/10 bg-zinc-950 active:cursor-grabbing"
+                className="relative mx-auto h-80 w-[320px] cursor-grab overflow-hidden rounded-[28px] border border-white/10 bg-zinc-950 active:cursor-grabbing"
                 onPointerCancel={handleCropPointerUp}
                 onPointerDown={handleCropPointerDown}
                 onPointerMove={handleCropPointerMove}
@@ -725,8 +877,8 @@ export function ProfilePage() {
                   />
                 ) : null}
                 <div className="pointer-events-none absolute inset-0 bg-black/35" />
-                <div className="pointer-events-none absolute inset-[18px] rounded-full border border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.38)]" />
-                <div className="pointer-events-none absolute inset-[18px] rounded-full ring-1 ring-white/20" />
+                <div className="pointer-events-none absolute inset-4.5 rounded-full border border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.38)]" />
+                <div className="pointer-events-none absolute inset-4.5 rounded-full ring-1 ring-white/20" />
               </div>
 
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-800/80 px-4 py-4">
@@ -749,29 +901,13 @@ export function ProfilePage() {
                 </p>
                 <div
                   className="mx-auto mt-5 h-32 w-32 rounded-full border border-white/10 bg-zinc-950 bg-no-repeat shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
-                  style={{
-                    backgroundImage: cropPreviewUrl
-                      ? `url(${cropPreviewUrl})`
-                      : undefined,
-                    backgroundPosition: `${cropBounds.x}px ${cropBounds.y}px`,
-                    backgroundSize:
-                      imageDimensions && cropPreviewUrl
-                        ? `${imageDimensions.width * zoom}px ${
-                            imageDimensions.height * zoom
-                          }px`
-                        : undefined,
-                  }}
+                  style={cropPreviewCircleStyle}
                 />
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-zinc-800/70 p-4 text-sm text-white/55">
-                The saved image is square, so it still works in the in-game
-                avatar boxes.
               </div>
             </div>
           </div>
 
-          <DialogFooter className="border-white/10 bg-zinc-950/70">
+          <DialogFooter className="mx-0 mb-0 flex flex-row justify-end gap-2 border-white/10 bg-zinc-950/70 px-6 py-4">
             <Button onClick={closeCropDialog} type="button" variant="outline">
               Cancel
             </Button>

@@ -25,6 +25,7 @@ interface ProfileDataResponse {
 }
 
 interface AuthContextType {
+  clearAvatar: () => Promise<boolean>;
   getProfileData: (username: string) => Promise<ProfileDataResponse>;
   isAuthenticated: boolean;
   isGuest: boolean;
@@ -307,6 +308,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearAvatar = async (): Promise<boolean> => {
+    if (!user || isGuest) {
+      toast.error("Guests can't clear avatars");
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ clearAvatar: true }),
+      });
+
+      const data = await response.json();
+
+      if (!(data.success && data.user)) {
+        toast.error(data.message || "Failed to clear avatar");
+        return false;
+      }
+
+      persistUser(data.user);
+      return true;
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+      console.error("Clear avatar error:", error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -317,6 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     loginAsGuest,
+    clearAvatar,
     getProfileData,
     updateAvatarColor,
     uploadAvatar,

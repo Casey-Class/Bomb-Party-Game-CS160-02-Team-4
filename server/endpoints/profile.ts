@@ -74,17 +74,31 @@ export const profileEndpoint = async (req: Request) => {
                 await deleteAvatarFileByUrl(previousAvatarUrl);
             }
         } else {
-            const body = await req.json().catch(() => null) as { avatarColor?: string } | null;
-            const avatarColor = body?.avatarColor?.trim();
+            const body = await req.json().catch(() => null) as { avatarColor?: string; clearAvatar?: boolean } | null;
 
-            if (!avatarColor || !VALID_AVATAR_COLORS.has(avatarColor)) {
-                return Response.json({ success: false, message: "Invalid avatar color" }, { status: 400 });
-            }
+            if (body?.clearAvatar) {
+                const previousAvatarUrl = updatedUser.avatar_url;
+                updatedUser = await updateUserAvatarUrl(payload.userId, null);
 
-            updatedUser = await updateUserAvatarColor(payload.userId, avatarColor);
+                if (!updatedUser) {
+                    return Response.json({ success: false, message: "User not found" }, { status: 404 });
+                }
 
-            if (!updatedUser) {
-                return Response.json({ success: false, message: "User not found" }, { status: 404 });
+                if (previousAvatarUrl) {
+                    await deleteAvatarFileByUrl(previousAvatarUrl);
+                }
+            } else {
+                const avatarColor = body?.avatarColor?.trim();
+
+                if (!avatarColor || !VALID_AVATAR_COLORS.has(avatarColor)) {
+                    return Response.json({ success: false, message: "Invalid avatar color" }, { status: 400 });
+                }
+
+                updatedUser = await updateUserAvatarColor(payload.userId, avatarColor);
+
+                if (!updatedUser) {
+                    return Response.json({ success: false, message: "User not found" }, { status: 404 });
+                }
             }
         }
 
